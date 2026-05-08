@@ -8,8 +8,8 @@ type DashboardLayoutProps = {
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
     <div className="min-h-screen">
-      {children}
       <GlobalCartWidget />
+      {children}
     </div>
   );
 }
