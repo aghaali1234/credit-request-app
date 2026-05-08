@@ -1,6 +1,14 @@
 "use client";
 
-import { useEffect, useId, useMemo, useRef, useState, type ChangeEvent, type MouseEvent as ReactMouseEvent } from "react";
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type MouseEvent as ReactMouseEvent,
+} from "react";
 
 import { formatUsdCurrency } from "@/lib/currency";
 
@@ -49,12 +57,20 @@ type ProductCreditRequestModalProps = {
   onClose: () => void;
 };
 
-export function ProductCreditRequestModal({ item, customerCode, invoiceNo, invoiceDate, onClose }: ProductCreditRequestModalProps) {
+export function ProductCreditRequestModal({
+  item,
+  customerCode,
+  invoiceNo,
+  invoiceDate,
+  onClose,
+}: ProductCreditRequestModalProps) {
   const [creditType, setCreditType] = useState<CreditType>("case");
   const [caseCount, setCaseCount] = useState<string>("");
   const [piecesPerCase, setPiecesPerCase] = useState<string>("");
   const [requestedPieces, setRequestedPieces] = useState<string>("");
-  const [selectedReason, setSelectedReason] = useState<ReasonOption | null>(null);
+  const [selectedReason, setSelectedReason] = useState<ReasonOption | null>(
+    null,
+  );
   const [otherReason, setOtherReason] = useState("");
   const [isReasonDropdownOpen, setIsReasonDropdownOpen] = useState(false);
   const [isMobileReasonSheetOpen, setIsMobileReasonSheetOpen] = useState(false);
@@ -115,14 +131,19 @@ export function ProductCreditRequestModal({ item, customerCode, invoiceNo, invoi
   }, [item.piece_price, item.quantity, numericCaseCount]);
 
   const pieceCreditAmount = useMemo(() => {
-    if (!pieceUnitPrice || !Number.isFinite(numericRequestedPieces) || numericRequestedPieces <= 0) {
+    if (
+      !pieceUnitPrice ||
+      !Number.isFinite(numericRequestedPieces) ||
+      numericRequestedPieces <= 0
+    ) {
       return null;
     }
 
     return pieceUnitPrice * numericRequestedPieces;
   }, [pieceUnitPrice, numericRequestedPieces]);
 
-  const autoCreditAmount = creditType === "case" ? caseCreditAmount : pieceCreditAmount;
+  const autoCreditAmount =
+    creditType === "case" ? caseCreditAmount : pieceCreditAmount;
 
   async function addSelectedItemToCart() {
     if (autoCreditAmount === null || !Number.isFinite(autoCreditAmount)) {
@@ -141,7 +162,9 @@ export function ProductCreditRequestModal({ item, customerCode, invoiceNo, invoi
 
     const resolvedReasons: string[] = [
       ...(selectedReason !== "Other" ? [selectedReason] : []),
-      ...(selectedReason === "Other" && otherReason.trim().length > 0 ? [otherReason.trim()] : []),
+      ...(selectedReason === "Other" && otherReason.trim().length > 0
+        ? [otherReason.trim()]
+        : []),
     ];
 
     if (resolvedReasons.length === 0) {
@@ -149,7 +172,8 @@ export function ProductCreditRequestModal({ item, customerCode, invoiceNo, invoi
       return;
     }
 
-    const requestedQuantity = creditType === "case" ? numericCaseCount : numericRequestedPieces;
+    const requestedQuantity =
+      creditType === "case" ? numericCaseCount : numericRequestedPieces;
     if (!Number.isFinite(requestedQuantity) || requestedQuantity <= 0) {
       setSubmitError("Please enter a valid requested quantity.");
       return;
@@ -159,37 +183,47 @@ export function ProductCreditRequestModal({ item, customerCode, invoiceNo, invoi
 
     setIsSubmitting(true);
     setSubmitError(null);
-    const response = await fetch("/api/cart", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        customer_code: customerCode,
-        invoice_no: invoiceNo,
-        invoice_date: invoiceDate ?? null,
-        item_no: item.item_no,
-        item_descp: itemDescriptionWithReason,
-        quantity: requestedQuantity,
-        sales_amount: item.sales_amount,
-        sales_batch_number: item.sales_batch_number,
-        sales_lot_no: item.sales_lot_no,
-        batch_expiration_date: item.batch_expiration_date,
-        piece_price: item.piece_price,
-        credit_type: creditType,
-        credit_amount: autoCreditAmount,
-      }),
-    });
-    if (!response.ok) {
-      const payload = (await response.json().catch(() => null)) as { details?: string; error?: string } | null;
-      setSubmitError(payload?.details ?? payload?.error ?? "Failed to add item to cart");
-      setIsSubmitting(false);
-      return;
-    }
 
-    setIsSubmitting(false);
-    window.dispatchEvent(new Event("cart-updated"));
-    onClose();
+    try {
+      const response = await fetch("/api/cart", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          customer_code: customerCode,
+          invoice_no: invoiceNo,
+          invoice_date: invoiceDate ?? null,
+          item_no: item.item_no,
+          item_descp: itemDescriptionWithReason,
+          quantity: requestedQuantity,
+          sales_amount: item.sales_amount,
+          sales_batch_number: item.sales_batch_number,
+          sales_lot_no: item.sales_lot_no,
+          batch_expiration_date: item.batch_expiration_date,
+          piece_price: item.piece_price,
+          credit_type: creditType,
+          credit_amount: autoCreditAmount,
+        }),
+      });
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as {
+          details?: string;
+          error?: string;
+        } | null;
+        setSubmitError(
+          payload?.details ?? payload?.error ?? "Failed to add item to cart",
+        );
+        return;
+      }
+
+      window.dispatchEvent(new Event("cart-updated"));
+      onClose();
+    } catch {
+      setSubmitError("Failed to add item to cart");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   function onPickPicture(event: ReactMouseEvent<HTMLLabelElement>) {
@@ -198,7 +232,9 @@ export function ProductCreditRequestModal({ item, customerCode, invoiceNo, invoi
       return;
     }
 
-    const isConfirmed = window.confirm("Please make sure LOT NUMBER is visible.");
+    const isConfirmed = window.confirm(
+      "Please make sure LOT NUMBER is visible.",
+    );
     if (!isConfirmed) {
       event.preventDefault();
     }
@@ -226,7 +262,9 @@ export function ProductCreditRequestModal({ item, customerCode, invoiceNo, invoi
         body: formData,
       });
 
-      const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+      const payload = (await response.json().catch(() => null)) as {
+        error?: string;
+      } | null;
 
       if (!response.ok) {
         setPictureError(payload?.error ?? "Failed to upload picture.");
@@ -245,7 +283,9 @@ export function ProductCreditRequestModal({ item, customerCode, invoiceNo, invoi
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-black/40 p-2 sm:p-4">
       <div className="max-h-[calc(100dvh-1rem)] w-full max-w-[min(42rem,calc(100dvh-1rem))] overflow-y-auto rounded-lg bg-white p-3 shadow-xl dark:bg-zinc-900 sm:max-h-[90dvh] sm:p-5">
         <div className="mb-3 flex items-start justify-between gap-3 sm:mb-4">
-          <h3 className="text-base font-semibold sm:text-lg">Product Detail & Credit Request</h3>
+          <h3 className="text-base font-semibold sm:text-lg">
+            Product Detail & Credit Request
+          </h3>
           <button
             type="button"
             onClick={onClose}
@@ -259,7 +299,9 @@ export function ProductCreditRequestModal({ item, customerCode, invoiceNo, invoi
           <div className="border-b border-zinc-200/80 bg-white/80 px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900/70">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500 dark:text-zinc-400">Product details</p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500 dark:text-zinc-400">
+                  Product details
+                </p>
                 <h4 className="mt-1 line-clamp-2 text-sm font-semibold leading-tight text-zinc-950 dark:text-zinc-50 sm:text-base">
                   {item.item_descp}
                 </h4>
@@ -272,24 +314,42 @@ export function ProductCreditRequestModal({ item, customerCode, invoiceNo, invoi
 
           <div className="grid grid-cols-2 gap-2 p-2 sm:p-3">
             <div className="rounded-md border border-zinc-200 bg-white px-2.5 py-2 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80">
-              <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Quantity</p>
-              <p className="mt-1 text-sm font-semibold text-zinc-950 dark:text-zinc-50">{item.quantity}</p>
+              <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                Quantity
+              </p>
+              <p className="mt-1 text-sm font-semibold text-zinc-950 dark:text-zinc-50">
+                {item.quantity}
+              </p>
             </div>
             <div className="rounded-md border border-zinc-200 bg-white px-2.5 py-2 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80">
-              <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Sales Amount</p>
-              <p className="mt-1 text-sm font-semibold text-zinc-950 dark:text-zinc-50">{formatUsdCurrency(item.sales_amount)}</p>
+              <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                Sales Amount
+              </p>
+              <p className="mt-1 text-sm font-semibold text-zinc-950 dark:text-zinc-50">
+                {formatUsdCurrency(item.sales_amount)}
+              </p>
             </div>
             <div className="rounded-md border border-zinc-200 bg-white px-2.5 py-2 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80">
-              <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Sales Lot No</p>
-              <p className="mt-1 truncate text-sm font-semibold text-zinc-950 dark:text-zinc-50">{item.sales_lot_no}</p>
+              <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                Sales Lot No
+              </p>
+              <p className="mt-1 truncate text-sm font-semibold text-zinc-950 dark:text-zinc-50">
+                {item.sales_lot_no}
+              </p>
             </div>
             <div className="rounded-md border border-zinc-200 bg-white px-2.5 py-2 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80">
-              <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Expiration</p>
-              <p className="mt-1 truncate text-sm font-semibold text-zinc-950 dark:text-zinc-50">{item.batch_expiration_date}</p>
+              <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                Expiration
+              </p>
+              <p className="mt-1 truncate text-sm font-semibold text-zinc-950 dark:text-zinc-50">
+                {item.batch_expiration_date}
+              </p>
             </div>
             <div className="col-span-2 rounded-md border border-zinc-200 bg-white px-2.5 py-2 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80">
               <div className="flex items-center justify-between gap-3">
-                <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Case Price</p>
+                <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                  Case Price
+                </p>
                 <p className="text-sm font-semibold text-zinc-950 dark:text-zinc-50">
                   {formatUsdCurrency(item.piece_price)}
                 </p>
@@ -306,8 +366,12 @@ export function ProductCreditRequestModal({ item, customerCode, invoiceNo, invoi
               onClick={() => setIsMobileReasonSheetOpen(true)}
               className="flex w-full items-center justify-between rounded-lg border border-zinc-300 bg-zinc-50 px-3 py-2 text-left text-sm shadow-sm dark:border-zinc-700 dark:bg-zinc-800/60"
             >
-              <span className="truncate">{selectedReason ?? "Select reason"}</span>
-              <span className="ml-3 text-xs text-zinc-500 dark:text-zinc-400">›</span>
+              <span className="truncate">
+                {selectedReason ?? "Select reason"}
+              </span>
+              <span className="ml-3 text-xs text-zinc-500 dark:text-zinc-400">
+                ›
+              </span>
             </button>
           </div>
 
@@ -320,7 +384,9 @@ export function ProductCreditRequestModal({ item, customerCode, invoiceNo, invoi
               <span className="truncate">
                 {selectedReason ?? "Select reason"}
               </span>
-              <span className="ml-3 text-xs text-zinc-500 dark:text-zinc-400">{isReasonDropdownOpen ? "▲" : "▼"}</span>
+              <span className="ml-3 text-xs text-zinc-500 dark:text-zinc-400">
+                {isReasonDropdownOpen ? "▲" : "▼"}
+              </span>
             </button>
 
             <div
@@ -334,7 +400,10 @@ export function ProductCreditRequestModal({ item, customerCode, invoiceNo, invoi
                 {REASON_OPTIONS.map((option) => {
                   const checked = selectedReason === option;
                   return (
-                    <label key={option} className="inline-flex items-center gap-2">
+                    <label
+                      key={option}
+                      className="inline-flex items-center gap-2"
+                    >
                       <input
                         type="radio"
                         name="credit-request-reason"
@@ -409,7 +478,9 @@ export function ProductCreditRequestModal({ item, customerCode, invoiceNo, invoi
 
           {selectedReason === "Other" ? (
             <label className="mt-3 block text-sm">
-              <span className="mb-1 block text-zinc-700 dark:text-zinc-200">Other reason</span>
+              <span className="mb-1 block text-zinc-700 dark:text-zinc-200">
+                Other reason
+              </span>
               <input
                 type="text"
                 value={otherReason}
@@ -447,7 +518,9 @@ export function ProductCreditRequestModal({ item, customerCode, invoiceNo, invoi
           {creditType === "case" ? (
             <div className="space-y-2 text-sm">
               <label className="block">
-                <span className="mb-1 block text-zinc-700 dark:text-zinc-200">Case Quantity</span>
+                <span className="mb-1 block text-zinc-700 dark:text-zinc-200">
+                  Case Quantity
+                </span>
                 <input
                   type="number"
                   min="0"
@@ -472,30 +545,40 @@ export function ProductCreditRequestModal({ item, customerCode, invoiceNo, invoi
                   className="w-full rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-2"
                 />
               </label>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">Maximum allowed: {item.quantity}</p>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                Maximum allowed: {item.quantity}
+              </p>
             </div>
           ) : (
             <div className="space-y-2 text-sm">
               <label className="block">
-                <span className="mb-1 block text-zinc-700 dark:text-zinc-200">Pieces Per Case</span>
+                <span className="mb-1 block text-zinc-700 dark:text-zinc-200">
+                  Pieces Per Case
+                </span>
                 <input
                   type="text"
                   inputMode="numeric"
                   pattern="[0-9]*"
                   value={piecesPerCase}
-                  onChange={(event) => setPiecesPerCase(event.target.value.replace(/\D/g, ""))}
+                  onChange={(event) =>
+                    setPiecesPerCase(event.target.value.replace(/\D/g, ""))
+                  }
                   placeholder="How many piece are in one case"
                   className="w-full rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-2"
                 />
               </label>
               <label className="block">
-                <span className="mb-1 block text-zinc-700 dark:text-zinc-200">Requested Piece Quantity</span>
+                <span className="mb-1 block text-zinc-700 dark:text-zinc-200">
+                  Requested Piece Quantity
+                </span>
                 <input
                   type="text"
                   inputMode="numeric"
                   pattern="[0-9]*"
                   value={requestedPieces}
-                  onChange={(event) => setRequestedPieces(event.target.value.replace(/\D/g, ""))}
+                  onChange={(event) =>
+                    setRequestedPieces(event.target.value.replace(/\D/g, ""))
+                  }
                   placeholder="How any pieces are requested for credit"
                   className="w-full rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-2"
                 />
@@ -512,8 +595,12 @@ export function ProductCreditRequestModal({ item, customerCode, invoiceNo, invoi
             </p>
           </div>
 
-          {submitError ? <p className="mt-3 text-sm text-red-600">{submitError}</p> : null}
-          {pictureError ? <p className="mt-3 text-sm text-red-600">{pictureError}</p> : null}
+          {submitError ? (
+            <p className="mt-3 text-sm text-red-600">{submitError}</p>
+          ) : null}
+          {pictureError ? (
+            <p className="mt-3 text-sm text-red-600">{pictureError}</p>
+          ) : null}
 
           <input
             id={pictureInputId}
@@ -530,7 +617,9 @@ export function ProductCreditRequestModal({ item, customerCode, invoiceNo, invoi
               onClick={onPickPicture}
               aria-disabled={isUploadingPicture || isSubmitting}
               className={`rounded-md border border-zinc-300 dark:border-zinc-700 px-4 py-2 text-sm text-zinc-700 dark:text-zinc-200 ${
-                isUploadingPicture || isSubmitting ? "cursor-not-allowed opacity-50" : "cursor-pointer"
+                isUploadingPicture || isSubmitting
+                  ? "cursor-not-allowed opacity-50"
+                  : "cursor-pointer"
               }`}
             >
               {isUploadingPicture ? "Uploading..." : "Add Picture"}

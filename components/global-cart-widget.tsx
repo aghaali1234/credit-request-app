@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import type { ChangeEvent, MouseEvent as ReactMouseEvent } from "react";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 
 import type { CreditRequestCartItem } from "@/lib/credit-request-email";
 
@@ -71,7 +72,9 @@ export function GlobalCartWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [authorized, setAuthorized] = useState(true);
   const [pictures, setPictures] = useState<CartPhoto[]>([]);
-  const [selectedPicture, setSelectedPicture] = useState<CartPhoto | null>(null);
+  const [selectedPicture, setSelectedPicture] = useState<CartPhoto | null>(
+    null,
+  );
   const [isPreviewImageBroken, setIsPreviewImageBroken] = useState(false);
   const [isUploadingPictures, setIsUploadingPictures] = useState(false);
   const [photoError, setPhotoError] = useState<string | null>(null);
@@ -80,8 +83,23 @@ export function GlobalCartWidget() {
   const [sendError, setSendError] = useState<string | null>(null);
   const [removeAllError, setRemoveAllError] = useState<string | null>(null);
   const [notes, setNotes] = useState("");
-  const [pickupSelectionsById, setPickupSelectionsById] = useState<Record<string, boolean>>({});
+  const [pickupSelectionsById, setPickupSelectionsById] = useState<
+    Record<string, boolean>
+  >({});
   const fileInputId = useId();
+  const pathname = usePathname();
+
+  const resetTransientUiState = useCallback(() => {
+    setIsOpen(false);
+    setSelectedPicture(null);
+    setIsPreviewImageBroken(false);
+    setIsUploadingPictures(false);
+    setIsSending(false);
+    setIsRemovingAll(false);
+    setPhotoError(null);
+    setSendError(null);
+    setRemoveAllError(null);
+  }, []);
 
   const cartRows = useMemo(() => {
     const isManualNote = (item: CartItem) => isStandaloneReasonRow(item);
@@ -126,9 +144,12 @@ export function GlobalCartWidget() {
 
   const cartItemCount = useMemo(() => {
     const regularRows = items.filter((item) => !isStandaloneReasonRow(item));
-    const regularKeys = new Set(regularRows.map((item) => toReasonRowKey(item)));
+    const regularKeys = new Set(
+      regularRows.map((item) => toReasonRowKey(item)),
+    );
     const standaloneRowsWithoutRegularPair = items.filter(
-      (item) => isStandaloneReasonRow(item) && !regularKeys.has(toReasonRowKey(item)),
+      (item) =>
+        isStandaloneReasonRow(item) && !regularKeys.has(toReasonRowKey(item)),
     );
 
     return regularRows.length + standaloneRowsWithoutRegularPair.length;
@@ -193,7 +214,9 @@ export function GlobalCartWidget() {
     }
 
     const linkedReasonRows = items.filter(
-      (item) => isStandaloneReasonRow(item) && toReasonRowKey(item) === toReasonRowKey(selectedItem),
+      (item) =>
+        isStandaloneReasonRow(item) &&
+        toReasonRowKey(item) === toReasonRowKey(selectedItem),
     );
 
     const didRemoveMainItem = await deleteCartItemById(id);
@@ -202,7 +225,9 @@ export function GlobalCartWidget() {
     }
 
     if (linkedReasonRows.length > 0) {
-      await Promise.all(linkedReasonRows.map((reasonRow) => deleteCartItemById(reasonRow.id)));
+      await Promise.all(
+        linkedReasonRows.map((reasonRow) => deleteCartItemById(reasonRow.id)),
+      );
     }
 
     await loadCart();
@@ -214,7 +239,9 @@ export function GlobalCartWidget() {
       return;
     }
 
-    const isConfirmed = window.confirm("Please make sure LOT NUMBER is visible.");
+    const isConfirmed = window.confirm(
+      "Please make sure LOT NUMBER is visible.",
+    );
     if (!isConfirmed) {
       event.preventDefault();
     }
@@ -242,7 +269,10 @@ export function GlobalCartWidget() {
         body: formData,
       });
 
-      const payload = (await response.json()) as { photos?: CartPhoto[]; error?: string };
+      const payload = (await response.json()) as {
+        photos?: CartPhoto[];
+        error?: string;
+      };
       if (!response.ok) {
         setPhotoError(payload.error ?? "Failed to upload photos.");
         return;
@@ -266,14 +296,20 @@ export function GlobalCartWidget() {
     });
 
     if (!response.ok) {
-      const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+      const payload = (await response.json().catch(() => null)) as {
+        error?: string;
+      } | null;
       setPhotoError(payload?.error ?? "Failed to remove photo.");
       return;
     }
 
     setPhotoError(null);
-    setPictures((previousPictures) => previousPictures.filter((picture) => picture.id !== photoId));
-    setSelectedPicture((currentPicture) => (currentPicture?.id === photoId ? null : currentPicture));
+    setPictures((previousPictures) =>
+      previousPictures.filter((picture) => picture.id !== photoId),
+    );
+    setSelectedPicture((currentPicture) =>
+      currentPicture?.id === photoId ? null : currentPicture,
+    );
   }
 
   async function removeAllFromCart() {
@@ -301,7 +337,9 @@ export function GlobalCartWidget() {
 
     try {
       const response = await fetch("/api/cart", { method: "DELETE" });
-      const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+      const payload = (await response.json().catch(() => null)) as {
+        error?: string;
+      } | null;
       if (!response.ok) {
         setRemoveAllError(payload?.error ?? "Failed to remove all cart data.");
         return false;
@@ -329,11 +367,17 @@ export function GlobalCartWidget() {
     }
 
     const hasMissingRequiredItemData = cartRows.some(
-      (item) => !item.customer_code || !item.invoice_no || !item.item_no || !item.item_descp,
+      (item) =>
+        !item.customer_code ||
+        !item.invoice_no ||
+        !item.item_no ||
+        !item.item_descp,
     );
 
     if (hasMissingRequiredItemData) {
-      setSendError("Unable to prepare draft. Some cart fields are missing required values.");
+      setSendError(
+        "Unable to prepare draft. Some cart fields are missing required values.",
+      );
       return;
     }
 
@@ -363,7 +407,9 @@ export function GlobalCartWidget() {
         body: formData,
       });
 
-      const payload = (await response.json()) as DraftResponse & { error?: string };
+      const payload = (await response.json()) as DraftResponse & {
+        error?: string;
+      };
 
       if (!response.ok) {
         setSendError(payload.error ?? "Failed to prepare draft.");
@@ -377,7 +423,9 @@ export function GlobalCartWidget() {
 
       const wasCartCleared = await clearCartData();
       if (!wasCartCleared) {
-        setSendError("Email draft was prepared, but cart could not be cleared. Please use Remove All.");
+        setSendError(
+          "Email draft was prepared, but cart could not be cleared. Please use Remove All.",
+        );
         return;
       }
 
@@ -403,15 +451,31 @@ export function GlobalCartWidget() {
       void loadPhotos();
     }
 
+    function handlePageShow() {
+      resetTransientUiState();
+      void loadCart();
+      void loadPhotos();
+    }
+
     window.addEventListener("cart-updated", handleUpdated);
     window.addEventListener("cart-photos-updated", handlePhotosUpdated);
+    window.addEventListener("pageshow", handlePageShow);
 
     return () => {
       window.clearTimeout(timeoutId);
       window.removeEventListener("cart-updated", handleUpdated);
       window.removeEventListener("cart-photos-updated", handlePhotosUpdated);
+      window.removeEventListener("pageshow", handlePageShow);
     };
-  }, [loadCart, loadPhotos]);
+  }, [loadCart, loadPhotos, resetTransientUiState]);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(resetTransientUiState, 0);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [pathname, resetTransientUiState]);
 
   useEffect(() => {
     if (!selectedPicture) {
@@ -435,13 +499,13 @@ export function GlobalCartWidget() {
   }
 
   return (
-    <>
+    <div className="fixed inset-0 z-[80] pointer-events-none">
       <button
         type="button"
         onClick={() => {
           setIsOpen(true);
         }}
-        className="fixed bottom-4 right-4 z-40 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-zinc-900 dark:text-slate-200 dark:hover:bg-slate-800/60"
+        className="pointer-events-auto fixed bottom-4 right-4 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-zinc-900 dark:text-slate-200 dark:hover:bg-slate-800/60"
       >
         <svg
           aria-hidden="true"
@@ -461,27 +525,38 @@ export function GlobalCartWidget() {
       </button>
 
       {isOpen ? (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/50 p-4 md:p-8">
+        <div className="pointer-events-auto fixed inset-0 overflow-y-auto bg-slate-950/50 p-4 md:p-8">
           <div className="mx-auto max-h-[calc(100vh-1.5rem)] w-full max-w-7xl overflow-y-auto rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-zinc-900 shadow-2xl">
             <div className="border-b border-slate-200 dark:border-slate-700 px-6 py-5 md:px-8">
               <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div>
-                  <h3 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Credit Request Cart</h3>
-                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Review details carefully before submitting.</p>
+                  <h3 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
+                    Credit Request Cart
+                  </h3>
+                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                    Review details carefully before submitting.
+                  </p>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={() => void sendCreditRequest()}
-                    disabled={displayRows.length === 0 || isSending || isRemovingAll}
+                    disabled={
+                      displayRows.length === 0 || isSending || isRemovingAll
+                    }
                     className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    {isSending ? "Preparing Email Draft..." : "Send Credit Request"}
+                    {isSending
+                      ? "Preparing Email Draft..."
+                      : "Send Credit Request"}
                   </button>
                   <button
                     type="button"
                     onClick={() => void removeAllFromCart()}
-                    disabled={(items.length === 0 && pictures.length === 0) || isRemovingAll}
+                    disabled={
+                      (items.length === 0 && pictures.length === 0) ||
+                      isRemovingAll
+                    }
                     className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {isRemovingAll ? "Removing..." : "Remove All"}
@@ -495,7 +570,6 @@ export function GlobalCartWidget() {
                   </button>
                 </div>
               </div>
-
             </div>
 
             <div className="space-y-6 px-6 py-6 md:px-8">
@@ -508,30 +582,60 @@ export function GlobalCartWidget() {
                   <table className="min-w-full text-sm">
                     <thead className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200">
                       <tr>
-                        <th className="px-3 py-3 text-left font-semibold">Need Pick-up</th>
-                        <th className="px-3 py-3 text-left font-semibold">Customer Code</th>
-                        <th className="px-3 py-3 text-left font-semibold">Invoice No</th>
-                        <th className="px-3 py-3 text-left font-semibold">Item No</th>
-                        <th className="px-3 py-3 text-left font-semibold">Item Description</th>
-                        <th className="px-3 py-3 text-left font-semibold">Sales Batch Number</th>
-                        <th className="px-3 py-3 text-left font-semibold">Sales Lot No</th>
-                        <th className="px-3 py-3 text-left font-semibold">Reason</th>
-                        <th className="px-3 py-3 text-center font-semibold">Credit Type</th>
-                        <th className="px-3 py-3 text-right font-semibold">Qty</th>
-                        <th className="px-3 py-3 text-right font-semibold">Credit Amount</th>
-                        <th className="px-3 py-3 text-center font-semibold">Action</th>
+                        <th className="px-3 py-3 text-left font-semibold">
+                          Need Pick-up
+                        </th>
+                        <th className="px-3 py-3 text-left font-semibold">
+                          Customer Code
+                        </th>
+                        <th className="px-3 py-3 text-left font-semibold">
+                          Invoice No
+                        </th>
+                        <th className="px-3 py-3 text-left font-semibold">
+                          Item No
+                        </th>
+                        <th className="px-3 py-3 text-left font-semibold">
+                          Item Description
+                        </th>
+                        <th className="px-3 py-3 text-left font-semibold">
+                          Sales Batch Number
+                        </th>
+                        <th className="px-3 py-3 text-left font-semibold">
+                          Sales Lot No
+                        </th>
+                        <th className="px-3 py-3 text-left font-semibold">
+                          Reason
+                        </th>
+                        <th className="px-3 py-3 text-center font-semibold">
+                          Credit Type
+                        </th>
+                        <th className="px-3 py-3 text-right font-semibold">
+                          Qty
+                        </th>
+                        <th className="px-3 py-3 text-right font-semibold">
+                          Credit Amount
+                        </th>
+                        <th className="px-3 py-3 text-center font-semibold">
+                          Action
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
                       {displayRows.map((item) => (
-                        <tr key={item.id} className="border-t border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200">
+                        <tr
+                          key={item.id}
+                          className="border-t border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200"
+                        >
                           <td className="px-3 py-3">
                             <input
                               type="checkbox"
                               checked={Boolean(pickupSelectionsById[item.id])}
                               onChange={(event) => {
                                 const isChecked = event.target.checked;
-                                setPickupSelectionsById((prev) => ({ ...prev, [item.id]: isChecked }));
+                                setPickupSelectionsById((prev) => ({
+                                  ...prev,
+                                  [item.id]: isChecked,
+                                }));
                               }}
                               className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500"
                             />
@@ -539,13 +643,25 @@ export function GlobalCartWidget() {
                           <td className="px-3 py-3">{item.customer_code}</td>
                           <td className="px-3 py-3">{item.invoice_no}</td>
                           <td className="px-3 py-3">{item.item_no}</td>
-                          <td className="px-3 py-3">{item.displayDescription}</td>
-                          <td className="px-3 py-3">{item.sales_batch_number ?? "—"}</td>
-                          <td className="px-3 py-3">{item.sales_lot_no ?? "—"}</td>
+                          <td className="px-3 py-3">
+                            {item.displayDescription}
+                          </td>
+                          <td className="px-3 py-3">
+                            {item.sales_batch_number ?? "—"}
+                          </td>
+                          <td className="px-3 py-3">
+                            {item.sales_lot_no ?? "—"}
+                          </td>
                           <td className="px-3 py-3">{item.reason ?? "—"}</td>
-                          <td className="px-3 py-3 text-center">{item.credit_type}</td>
-                          <td className="px-3 py-3 text-right">{item.quantity ?? 0}</td>
-                          <td className="px-3 py-3 text-right">{Number(item.credit_amount).toFixed(2)}</td>
+                          <td className="px-3 py-3 text-center">
+                            {item.credit_type}
+                          </td>
+                          <td className="px-3 py-3 text-right">
+                            {item.quantity ?? 0}
+                          </td>
+                          <td className="px-3 py-3 text-right">
+                            {Number(item.credit_amount).toFixed(2)}
+                          </td>
                           <td className="px-3 py-3 text-center">
                             <button
                               type="button"
@@ -565,7 +681,9 @@ export function GlobalCartWidget() {
               <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 p-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Photo Evidence</p>
+                    <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                      Photo Evidence
+                    </p>
                   </div>
                   <input
                     id={fileInputId}
@@ -583,7 +701,9 @@ export function GlobalCartWidget() {
                     onClick={onPickPictures}
                     aria-disabled={isUploadingPictures}
                     className={`rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:bg-slate-800 ${
-                      isUploadingPictures ? "cursor-not-allowed opacity-50" : "cursor-pointer"
+                      isUploadingPictures
+                        ? "cursor-not-allowed opacity-50"
+                        : "cursor-pointer"
                     }`}
                   >
                     {isUploadingPictures ? "Uploading..." : "Add Photos"}
@@ -592,7 +712,9 @@ export function GlobalCartWidget() {
 
                 <div className="mt-4 min-h-14 rounded-lg border border-dashed border-slate-300 dark:border-slate-700 bg-white dark:bg-zinc-900 p-3">
                   {isUploadingPictures ? (
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Uploading photo evidence...</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      Uploading photo evidence...
+                    </p>
                   ) : pictures.length > 0 ? (
                     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
                       {pictures.map((picture) => (
@@ -634,7 +756,8 @@ export function GlobalCartWidget() {
                     </div>
                   ) : (
                     <p className="text-xs text-slate-500 dark:text-slate-400">
-                      No photos uploaded yet. Click <strong>Add Photos</strong> to attach evidence.
+                      No photos uploaded yet. Click <strong>Add Photos</strong>{" "}
+                      to attach evidence.
                     </p>
                   )}
                 </div>
@@ -646,7 +769,9 @@ export function GlobalCartWidget() {
               </div>
 
               <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 p-4">
-                <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Notes:</p>
+                <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                  Notes:
+                </p>
                 <textarea
                   value={notes}
                   onChange={(event) => setNotes(event.target.value)}
@@ -656,7 +781,9 @@ export function GlobalCartWidget() {
               </div>
 
               {sendError ? (
-                <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{sendError}</p>
+                <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+                  {sendError}
+                </p>
               ) : null}
               {removeAllError ? (
                 <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
@@ -668,13 +795,16 @@ export function GlobalCartWidget() {
 
           {selectedPicture ? (
             <div
-              className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/80 p-4"
+              className="pointer-events-auto fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/80 p-4"
               role="dialog"
               aria-modal="true"
               aria-label="Photo preview"
               onClick={() => setSelectedPicture(null)}
             >
-              <div className="relative max-h-[90vh] max-w-[90vw]" onClick={(event) => event.stopPropagation()}>
+              <div
+                className="relative max-h-[90vh] max-w-[90vw]"
+                onClick={(event) => event.stopPropagation()}
+              >
                 <button
                   type="button"
                   onClick={() => setSelectedPicture(null)}
@@ -708,6 +838,6 @@ export function GlobalCartWidget() {
           ) : null}
         </div>
       ) : null}
-    </>
+    </div>
   );
 }
