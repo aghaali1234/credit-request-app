@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import type { ChangeEvent, MouseEvent as ReactMouseEvent } from "react";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 
 import type { CreditRequestCartItem } from "@/lib/credit-request-email";
 
@@ -66,6 +67,13 @@ function toReasonRowKey(item: CartItem) {
   return `${item.customer_code}::${item.invoice_no}::${item.item_no}`;
 }
 
+function cleanupDocumentInteractionState() {
+  document.body.classList.remove("modal-open");
+  document.body.style.overflow = "";
+  document.body.style.pointerEvents = "";
+  document.body.style.position = "";
+}
+
 export function GlobalCartWidget() {
   const [items, setItems] = useState<CartItem[]>([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -81,6 +89,7 @@ export function GlobalCartWidget() {
   const [removeAllError, setRemoveAllError] = useState<string | null>(null);
   const [notes, setNotes] = useState("");
   const [pickupSelectionsById, setPickupSelectionsById] = useState<Record<string, boolean>>({});
+  const pathname = usePathname();
   const fileInputId = useId();
 
   const cartRows = useMemo(() => {
@@ -176,6 +185,12 @@ export function GlobalCartWidget() {
     setPictures(payload.photos ?? []);
     setPhotoError(null);
     setAuthorized(true);
+  }, []);
+
+  const closeCartModal = useCallback(() => {
+    setIsOpen(false);
+    setSelectedPicture(null);
+    cleanupDocumentInteractionState();
   }, []);
 
   async function deleteCartItemById(id: string) {
@@ -390,6 +405,39 @@ export function GlobalCartWidget() {
   }
 
   useEffect(() => {
+    if (!isOpen && !selectedPicture) {
+      cleanupDocumentInteractionState();
+    }
+
+    return () => {
+      cleanupDocumentInteractionState();
+    };
+  }, [isOpen, selectedPicture]);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      closeCartModal();
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [closeCartModal, pathname]);
+
+  useEffect(() => {
+    function restoreCleanInteractiveState() {
+      closeCartModal();
+    }
+
+    window.addEventListener("pageshow", restoreCleanInteractiveState);
+    window.addEventListener("popstate", restoreCleanInteractiveState);
+
+    return () => {
+      window.removeEventListener("pageshow", restoreCleanInteractiveState);
+      window.removeEventListener("popstate", restoreCleanInteractiveState);
+      cleanupDocumentInteractionState();
+    };
+  }, [closeCartModal]);
+
+  useEffect(() => {
     const timeoutId = window.setTimeout(() => {
       void loadCart();
       void loadPhotos();
@@ -439,6 +487,7 @@ export function GlobalCartWidget() {
       <button
         type="button"
         onClick={() => {
+          cleanupDocumentInteractionState();
           setIsOpen(true);
         }}
         className="fixed bottom-4 right-4 z-40 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-zinc-900 dark:text-slate-200 dark:hover:bg-slate-800/60"
@@ -488,7 +537,7 @@ export function GlobalCartWidget() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setIsOpen(false)}
+                    onClick={closeCartModal}
                     className="rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm text-slate-700 dark:text-slate-200 transition hover:bg-slate-50 dark:hover:bg-slate-800/60 dark:bg-slate-900/40"
                   >
                     Close
