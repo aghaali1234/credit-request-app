@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type ChangeEvent, type MouseEvent as ReactMouseEvent } from "react";
 
 import { formatUsdCurrency } from "@/lib/currency";
 
@@ -62,7 +62,7 @@ export function ProductCreditRequestModal({ item, customerCode, invoiceNo, invoi
   const [isUploadingPicture, setIsUploadingPicture] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [pictureError, setPictureError] = useState<string | null>(null);
-  const pictureInputRef = useRef<HTMLInputElement | null>(null);
+  const pictureInputId = useId();
   const reasonDropdownRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -192,13 +192,16 @@ export function ProductCreditRequestModal({ item, customerCode, invoiceNo, invoi
     onClose();
   }
 
-  function onPickPicture() {
-    const isConfirmed = window.confirm("Please make sure LOT NUMBER is visible.");
-    if (!isConfirmed) {
+  function onPickPicture(event: ReactMouseEvent<HTMLLabelElement>) {
+    if (isUploadingPicture || isSubmitting) {
+      event.preventDefault();
       return;
     }
 
-    pictureInputRef.current?.click();
+    const isConfirmed = window.confirm("Please make sure LOT NUMBER is visible.");
+    if (!isConfirmed) {
+      event.preventDefault();
+    }
   }
 
   async function onPictureSelected(event: ChangeEvent<HTMLInputElement>) {
@@ -513,22 +516,25 @@ export function ProductCreditRequestModal({ item, customerCode, invoiceNo, invoi
           {pictureError ? <p className="mt-3 text-sm text-red-600">{pictureError}</p> : null}
 
           <input
-            ref={pictureInputRef}
+            id={pictureInputId}
             type="file"
             accept="image/*"
-            className="hidden"
+            className="sr-only"
             onChange={(event) => void onPictureSelected(event)}
+            disabled={isUploadingPicture || isSubmitting}
           />
 
           <div className="mt-3 flex justify-end gap-2 sm:mt-4">
-            <button
-              type="button"
+            <label
+              htmlFor={pictureInputId}
               onClick={onPickPicture}
-              disabled={isUploadingPicture || isSubmitting}
-              className="rounded-md border border-zinc-300 dark:border-zinc-700 px-4 py-2 text-sm text-zinc-700 dark:text-zinc-200 disabled:cursor-not-allowed disabled:opacity-50"
+              aria-disabled={isUploadingPicture || isSubmitting}
+              className={`rounded-md border border-zinc-300 dark:border-zinc-700 px-4 py-2 text-sm text-zinc-700 dark:text-zinc-200 ${
+                isUploadingPicture || isSubmitting ? "cursor-not-allowed opacity-50" : "cursor-pointer"
+              }`}
             >
               {isUploadingPicture ? "Uploading..." : "Add Picture"}
-            </button>
+            </label>
             <button
               type="button"
               onClick={() => void addSelectedItemToCart()}

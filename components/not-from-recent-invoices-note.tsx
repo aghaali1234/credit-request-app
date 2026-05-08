@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import type { ChangeEvent } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import type { ChangeEvent, MouseEvent as ReactMouseEvent } from "react";
 
 type CreditType = "case" | "piece";
 
@@ -32,7 +32,7 @@ export function NotFromRecentInvoicesNote({ customerCode }: NotFromRecentInvoice
   const [activeLookupField, setActiveLookupField] = useState<LookupSearchBy | null>(null);
   const lookupAbortControllerRef = useRef<AbortController | null>(null);
   const lookupDebounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const pictureInputRef = useRef<HTMLInputElement>(null);
+  const pictureInputId = useId();
   const [isUploadingPicture, setIsUploadingPicture] = useState(false);
   const [pictureError, setPictureError] = useState<string | null>(null);
 
@@ -130,13 +130,16 @@ export function NotFromRecentInvoicesNote({ customerCode }: NotFromRecentInvoice
     setIsModalOpen(false);
   }
 
-  function onPickPicture() {
-    const isConfirmed = window.confirm("Please make sure LOT NUMBER is visible.");
-    if (!isConfirmed) {
+  function onPickPicture(event: ReactMouseEvent<HTMLLabelElement>) {
+    if (isUploadingPicture || isSubmitting) {
+      event.preventDefault();
       return;
     }
 
-    pictureInputRef.current?.click();
+    const isConfirmed = window.confirm("Please make sure LOT NUMBER is visible.");
+    if (!isConfirmed) {
+      event.preventDefault();
+    }
   }
 
   async function onPictureSelected(event: ChangeEvent<HTMLInputElement>) {
@@ -408,22 +411,25 @@ export function NotFromRecentInvoicesNote({ customerCode }: NotFromRecentInvoice
             {pictureError ? <p className="mt-3 text-sm text-red-600">{pictureError}</p> : null}
 
             <input
-              ref={pictureInputRef}
+              id={pictureInputId}
               type="file"
               accept="image/*"
-              className="hidden"
+              className="sr-only"
               onChange={(event) => void onPictureSelected(event)}
+              disabled={isUploadingPicture || isSubmitting}
             />
 
             <div className="mt-4 flex justify-end gap-2">
-              <button
-                type="button"
+              <label
+                htmlFor={pictureInputId}
                 onClick={onPickPicture}
-                disabled={isUploadingPicture || isSubmitting}
-                className="rounded-md border border-zinc-300 dark:border-zinc-700 px-4 py-2 text-sm text-zinc-700 dark:text-zinc-200 disabled:cursor-not-allowed disabled:opacity-50"
+                aria-disabled={isUploadingPicture || isSubmitting}
+                className={`rounded-md border border-zinc-300 dark:border-zinc-700 px-4 py-2 text-sm text-zinc-700 dark:text-zinc-200 ${
+                  isUploadingPicture || isSubmitting ? "cursor-not-allowed opacity-50" : "cursor-pointer"
+                }`}
               >
                 {isUploadingPicture ? "Uploading..." : "Add Picture"}
-              </button>
+              </label>
               <button
                 type="button"
                 onClick={() => void addNoteToCart()}

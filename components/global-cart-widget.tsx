@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { ChangeEvent } from "react";
+import { useCallback, useEffect, useId, useMemo, useState } from "react";
+import type { ChangeEvent, MouseEvent as ReactMouseEvent } from "react";
 import Image from "next/image";
 
 import type { CreditRequestCartItem } from "@/lib/credit-request-email";
@@ -81,7 +81,7 @@ export function GlobalCartWidget() {
   const [removeAllError, setRemoveAllError] = useState<string | null>(null);
   const [notes, setNotes] = useState("");
   const [pickupSelectionsById, setPickupSelectionsById] = useState<Record<string, boolean>>({});
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputId = useId();
 
   const cartRows = useMemo(() => {
     const isManualNote = (item: CartItem) => isStandaloneReasonRow(item);
@@ -208,13 +208,16 @@ export function GlobalCartWidget() {
     await loadCart();
   }
 
-  function onPickPictures() {
-    const isConfirmed = window.confirm("Please make sure LOT NUMBER is visible.");
-    if (!isConfirmed) {
+  function onPickPictures(event: ReactMouseEvent<HTMLLabelElement>) {
+    if (isUploadingPictures) {
+      event.preventDefault();
       return;
     }
 
-    fileInputRef.current?.click();
+    const isConfirmed = window.confirm("Please make sure LOT NUMBER is visible.");
+    if (!isConfirmed) {
+      event.preventDefault();
+    }
   }
 
   async function onPicturesSelected(event: ChangeEvent<HTMLInputElement>) {
@@ -566,23 +569,26 @@ export function GlobalCartWidget() {
                     <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Photo Evidence</p>
                   </div>
                   <input
-                    ref={fileInputRef}
+                    id={fileInputId}
                     type="file"
                     multiple
                     accept="image/*"
                     onChange={(event) => {
                       void onPicturesSelected(event);
                     }}
-                    className="hidden"
-                  />
-                  <button
-                    type="button"
-                    onClick={onPickPictures}
+                    className="sr-only"
                     disabled={isUploadingPictures}
-                    className="rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:bg-slate-800"
+                  />
+                  <label
+                    htmlFor={fileInputId}
+                    onClick={onPickPictures}
+                    aria-disabled={isUploadingPictures}
+                    className={`rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:bg-slate-800 ${
+                      isUploadingPictures ? "cursor-not-allowed opacity-50" : "cursor-pointer"
+                    }`}
                   >
                     {isUploadingPictures ? "Uploading..." : "Add Photos"}
-                  </button>
+                  </label>
                 </div>
 
                 <div className="mt-4 min-h-14 rounded-lg border border-dashed border-slate-300 dark:border-slate-700 bg-white dark:bg-zinc-900 p-3">
