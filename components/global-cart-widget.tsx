@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useId, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import type { ChangeEvent, MouseEvent as ReactMouseEvent } from "react";
 import Image from "next/image";
 import { cleanupDocumentInteractionState, MODAL_NAVIGATION_CLEANUP_EVENT } from "@/components/navigation-modal-cleanup";
@@ -83,6 +83,7 @@ export function GlobalCartWidget() {
   const [notes, setNotes] = useState("");
   const [pickupSelectionsById, setPickupSelectionsById] = useState<Record<string, boolean>>({});
   const fileInputId = useId();
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const cartRows = useMemo(() => {
     const isManualNote = (item: CartItem) => isStandaloneReasonRow(item);
@@ -189,6 +190,12 @@ export function GlobalCartWidget() {
     cleanupDocumentInteractionState();
   }, []);
 
+  const openCartModal = useCallback(() => {
+    window.dispatchEvent(new Event(MODAL_NAVIGATION_CLEANUP_EVENT));
+    cleanupDocumentInteractionState();
+    setIsOpen(true);
+  }, []);
+
   async function deleteCartItemById(id: string) {
     const response = await fetch(`/api/cart?id=${encodeURIComponent(id)}`, {
       method: "DELETE",
@@ -219,7 +226,7 @@ export function GlobalCartWidget() {
     await loadCart();
   }
 
-  function onPickPictures(event: ReactMouseEvent<HTMLLabelElement>) {
+  function onPickPictures(event: ReactMouseEvent<HTMLButtonElement>) {
     if (isUploadingPictures) {
       event.preventDefault();
       return;
@@ -228,7 +235,10 @@ export function GlobalCartWidget() {
     const isConfirmed = window.confirm("Please make sure LOT NUMBER is visible.");
     if (!isConfirmed) {
       event.preventDefault();
+      return;
     }
+
+    fileInputRef.current?.click();
   }
 
   async function onPicturesSelected(event: ChangeEvent<HTMLInputElement>) {
@@ -472,10 +482,7 @@ export function GlobalCartWidget() {
     <>
       <button
         type="button"
-        onClick={() => {
-          cleanupDocumentInteractionState();
-          setIsOpen(true);
-        }}
+        onClick={openCartModal}
         className="fixed bottom-4 right-4 z-40 inline-flex h-11 items-center justify-center gap-2 whitespace-nowrap rounded-full border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 shadow-lg shadow-slate-900/10 transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-zinc-900 dark:text-slate-200 dark:hover:bg-slate-800/60"
       >
         <svg
@@ -496,7 +503,7 @@ export function GlobalCartWidget() {
       </button>
 
       {isOpen ? (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/60 px-3 py-4 backdrop-blur-sm sm:px-6 md:py-8">
+        <div className="fixed inset-0 z-[70] overflow-y-auto bg-slate-950/60 px-3 py-4 backdrop-blur-sm sm:px-6 md:py-8">
           <div className="mx-auto flex max-h-[calc(100vh-2rem)] w-full max-w-[1180px] flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl shadow-slate-950/20 dark:border-slate-700 dark:bg-zinc-900 md:max-h-[calc(100vh-4rem)]">
             <div className="border-b border-slate-200 bg-white/95 px-5 py-5 dark:border-slate-700 dark:bg-zinc-900/95 md:px-8">
               <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
@@ -612,6 +619,7 @@ export function GlobalCartWidget() {
                     <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Photo Evidence</p>
                   </div>
                   <input
+                    ref={fileInputRef}
                     id={fileInputId}
                     type="file"
                     multiple
@@ -622,16 +630,14 @@ export function GlobalCartWidget() {
                     className="sr-only"
                     disabled={isUploadingPictures}
                   />
-                  <label
-                    htmlFor={fileInputId}
+                  <button
+                    type="button"
                     onClick={onPickPictures}
-                    aria-disabled={isUploadingPictures}
-                    className={`inline-flex h-10 min-w-[116px] items-center justify-center whitespace-nowrap rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 ${
-                      isUploadingPictures ? "cursor-not-allowed opacity-50" : "cursor-pointer"
-                    }`}
+                    disabled={isUploadingPictures}
+                    className="inline-flex h-10 min-w-[116px] items-center justify-center whitespace-nowrap rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
                   >
                     {isUploadingPictures ? "Uploading..." : "Add Photos"}
-                  </label>
+                  </button>
                 </div>
 
                 <div className="mt-4 min-h-14 rounded-lg border border-dashed border-slate-300 dark:border-slate-700 bg-white dark:bg-zinc-900 p-3">
@@ -712,7 +718,7 @@ export function GlobalCartWidget() {
 
           {selectedPicture ? (
             <div
-              className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/80 p-4"
+              className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/80 p-4"
               role="dialog"
               aria-modal="true"
               aria-label="Photo preview"
