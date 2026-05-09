@@ -197,23 +197,29 @@ export function GlobalCartWidget() {
     setIsUploadingPictures(false);
     setSelectedPicture(null);
     setIsPreviewImageBroken(false);
+    setSendError(null);
+    setRemoveAllError(null);
     scheduleCartInteractionRefresh();
   }, [scheduleCartInteractionRefresh]);
 
-  const closeCartModal = useCallback(() => {
-    setIsOpen(false);
-    setSelectedPicture(null);
-    cleanupDocumentInteractionState();
-  }, []);
-
-  const openCartModal = useCallback(() => {
-    window.dispatchEvent(new Event(MODAL_NAVIGATION_CLEANUP_EVENT));
+  const reinitializeCartUi = useCallback(() => {
     cleanupDocumentInteractionState();
     resetCartTransientUiState();
-    setIsOpen(true);
     void loadCart();
     void loadPhotos();
   }, [loadCart, loadPhotos, resetCartTransientUiState]);
+
+  const closeCartModal = useCallback(() => {
+    setIsOpen(false);
+    resetCartTransientUiState();
+    cleanupDocumentInteractionState();
+  }, [resetCartTransientUiState]);
+
+  const openCartModal = useCallback(() => {
+    window.dispatchEvent(new Event(MODAL_NAVIGATION_CLEANUP_EVENT));
+    reinitializeCartUi();
+    setIsOpen(true);
+  }, [reinitializeCartUi]);
 
   async function deleteCartItemById(id: string) {
     const response = await fetch(`/api/cart?id=${encodeURIComponent(id)}`, {
@@ -466,27 +472,27 @@ export function GlobalCartWidget() {
       void loadPhotos();
     }
 
-    function handlePageShow(event: PageTransitionEvent) {
-      if (!event.persisted) {
-        return;
-      }
+    function handlePageShow() {
+      reinitializeCartUi();
+    }
 
+    function handlePageHide() {
       resetCartTransientUiState();
-      void loadCart();
-      void loadPhotos();
     }
 
     window.addEventListener("cart-updated", handleUpdated);
     window.addEventListener("cart-photos-updated", handlePhotosUpdated);
     window.addEventListener("pageshow", handlePageShow);
+    window.addEventListener("pagehide", handlePageHide);
 
     return () => {
       window.clearTimeout(timeoutId);
       window.removeEventListener("cart-updated", handleUpdated);
       window.removeEventListener("cart-photos-updated", handlePhotosUpdated);
       window.removeEventListener("pageshow", handlePageShow);
+      window.removeEventListener("pagehide", handlePageHide);
     };
-  }, [loadCart, loadPhotos, resetCartTransientUiState]);
+  }, [loadCart, loadPhotos, reinitializeCartUi, resetCartTransientUiState]);
 
   useEffect(() => {
     if (!selectedPicture) {
@@ -535,6 +541,7 @@ export function GlobalCartWidget() {
 
       {isOpen ? (
         <div
+          key={cartInteractionRevision}
           className="fixed inset-0 z-[70] overflow-y-auto bg-slate-950/60 px-3 py-4 backdrop-blur-sm sm:px-6 md:py-8"
           data-interaction-revision={cartInteractionRevision}
         >
