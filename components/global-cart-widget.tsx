@@ -501,9 +501,7 @@ export function GlobalCartWidget() {
             <div className="border-b border-slate-200 bg-white/95 px-5 py-5 dark:border-slate-700 dark:bg-zinc-900/95 md:px-8">
               <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Review & Submit</p>
-                  <h3 className="mt-1 text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">Credit Request Cart</h3>
-                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Review request details, pickup status, photo evidence, and notes before submitting.</p>
+                  <h3 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">Credit Request Cart</h3>
                 </div>
                 <div className="flex w-full items-center gap-2 overflow-x-auto pb-1 lg:w-auto lg:justify-end lg:overflow-visible lg:pb-0">
                   <button
@@ -512,7 +510,7 @@ export function GlobalCartWidget() {
                     disabled={displayRows.length === 0 || isSending || isRemovingAll}
                     className="inline-flex h-10 min-w-[168px] shrink-0 items-center justify-center whitespace-nowrap rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-white"
                   >
-                    {isSending ? "Preparing Email Draft..." : "Send Credit Request"}
+                    {isSending ? "Preparing Email Draft..." : "Send Credit"}
                   </button>
                   <button
                     type="button"
@@ -535,18 +533,14 @@ export function GlobalCartWidget() {
             </div>
 
             <div className="flex-1 space-y-6 overflow-y-auto px-5 py-6 md:px-8">
-              <div className="grid gap-3 sm:grid-cols-3">
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-900/50">
-                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Items</p>
-                  <p className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">{cartItemCount}</p>
+              <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-900/50">
+                <div className="flex min-w-[120px] items-center justify-between gap-4 rounded-xl bg-white px-3 py-2 shadow-sm dark:bg-zinc-900">
+                  <span className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Item</span>
+                  <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">{cartItemCount}</span>
                 </div>
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-900/50">
-                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Photos</p>
-                  <p className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">{pictures.length}</p>
-                </div>
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-900/50">
-                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Total Credit</p>
-                  <p className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">${totalCreditAmount.toFixed(2)}</p>
+                <div className="flex min-w-[180px] items-center justify-between gap-4 rounded-xl bg-white px-3 py-2 shadow-sm dark:bg-zinc-900">
+                  <span className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Total Credit</span>
+                  <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">${totalCreditAmount.toFixed(2)}</span>
                 </div>
               </div>
               {displayRows.length === 0 ? (
