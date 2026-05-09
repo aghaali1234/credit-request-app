@@ -1,6 +1,16 @@
 "use client";
 
-import { useEffect, useId, useMemo, useRef, useState, type ChangeEvent, type MouseEvent as ReactMouseEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type MouseEvent as ReactMouseEvent,
+} from "react";
 
 import { formatUsdCurrency } from "@/lib/currency";
 
@@ -64,6 +74,35 @@ export function ProductCreditRequestModal({ item, customerCode, invoiceNo, invoi
   const [pictureError, setPictureError] = useState<string | null>(null);
   const pictureInputId = useId();
   const reasonDropdownRef = useRef<HTMLDivElement | null>(null);
+
+  const resetTransientPopupState = useCallback(() => {
+    setIsSubmitting(false);
+    setIsUploadingPicture(false);
+    setSubmitError(null);
+    setPictureError(null);
+    setIsReasonDropdownOpen(false);
+    setIsMobileReasonSheetOpen(false);
+  }, []);
+
+  useLayoutEffect(() => {
+    return () => {
+      resetTransientPopupState();
+    };
+  }, [resetTransientPopupState]);
+
+  useEffect(() => {
+    function resetAfterPageRestore() {
+      resetTransientPopupState();
+    }
+
+    window.addEventListener("pageshow", resetAfterPageRestore);
+    window.addEventListener("pagehide", resetAfterPageRestore);
+
+    return () => {
+      window.removeEventListener("pageshow", resetAfterPageRestore);
+      window.removeEventListener("pagehide", resetAfterPageRestore);
+    };
+  }, [resetTransientPopupState]);
 
   useEffect(() => {
     if (!isReasonDropdownOpen) {

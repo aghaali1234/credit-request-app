@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import type { ChangeEvent, MouseEvent as ReactMouseEvent } from "react";
 
 import { cleanupDocumentInteractionState, MODAL_NAVIGATION_CLEANUP_EVENT } from "@/components/navigation-modal-cleanup";
@@ -38,10 +38,44 @@ export function NotFromRecentInvoicesNote({ customerCode }: NotFromRecentInvoice
   const [isUploadingPicture, setIsUploadingPicture] = useState(false);
   const [pictureError, setPictureError] = useState<string | null>(null);
 
+  const resetLookupState = useCallback(() => {
+    setItemOptions([]);
+    setActiveLookupField(null);
+    setIsItemLookupLoading(false);
+  }, []);
+
+  const resetTransientPopupState = useCallback(() => {
+    setIsSubmitting(false);
+    setIsUploadingPicture(false);
+    setSubmitError(null);
+    setPictureError(null);
+    resetLookupState();
+  }, [resetLookupState]);
+
+  useLayoutEffect(() => {
+    return () => {
+      resetTransientPopupState();
+    };
+  }, [resetTransientPopupState]);
+
+  useEffect(() => {
+    function resetAfterPageRestore() {
+      resetTransientPopupState();
+    }
+
+    window.addEventListener("pageshow", resetAfterPageRestore);
+    window.addEventListener("pagehide", resetAfterPageRestore);
+
+    return () => {
+      window.removeEventListener("pageshow", resetAfterPageRestore);
+      window.removeEventListener("pagehide", resetAfterPageRestore);
+    };
+  }, [resetTransientPopupState]);
+
   useEffect(() => {
     function resetPopupState() {
       setIsModalOpen(false);
-      resetLookupState();
+      resetTransientPopupState();
       cleanupDocumentInteractionState();
     }
 
@@ -49,7 +83,7 @@ export function NotFromRecentInvoicesNote({ customerCode }: NotFromRecentInvoice
     return () => {
       window.removeEventListener(MODAL_NAVIGATION_CLEANUP_EVENT, resetPopupState);
     };
-  }, []);
+  }, [resetTransientPopupState]);
 
   useEffect(() => {
     return () => {
@@ -62,12 +96,6 @@ export function NotFromRecentInvoicesNote({ customerCode }: NotFromRecentInvoice
       }
     };
   }, []);
-
-  function resetLookupState() {
-    setItemOptions([]);
-    setActiveLookupField(null);
-    setIsItemLookupLoading(false);
-  }
 
   function loadItemOptions(searchValue: string, searchBy: LookupSearchBy) {
     const normalizedSearch = searchValue.trim();
@@ -131,9 +159,7 @@ export function NotFromRecentInvoicesNote({ customerCode }: NotFromRecentInvoice
   }
 
   function openModal() {
-    setSubmitError(null);
-    setPictureError(null);
-    resetLookupState();
+    resetTransientPopupState();
     setIsModalOpen(true);
   }
 
