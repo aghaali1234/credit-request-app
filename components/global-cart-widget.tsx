@@ -135,6 +135,10 @@ export function GlobalCartWidget() {
     return regularRows.length + standaloneRowsWithoutRegularPair.length;
   }, [items]);
 
+  const totalCreditAmount = useMemo(() => {
+    return displayRows.reduce((sum, item) => sum + Number(item.credit_amount || 0), 0);
+  }, [displayRows]);
+
   const loadCart = useCallback(async () => {
     const response = await fetch("/api/cart", { cache: "no-store" });
 
@@ -472,7 +476,7 @@ export function GlobalCartWidget() {
           cleanupDocumentInteractionState();
           setIsOpen(true);
         }}
-        className="fixed bottom-4 right-4 z-40 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-zinc-900 dark:text-slate-200 dark:hover:bg-slate-800/60"
+        className="fixed bottom-4 right-4 z-40 inline-flex h-11 items-center justify-center gap-2 whitespace-nowrap rounded-full border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 shadow-lg shadow-slate-900/10 transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-zinc-900 dark:text-slate-200 dark:hover:bg-slate-800/60"
       >
         <svg
           aria-hidden="true"
@@ -492,20 +496,21 @@ export function GlobalCartWidget() {
       </button>
 
       {isOpen ? (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/50 p-4 md:p-8">
-          <div className="mx-auto max-h-[calc(100vh-1.5rem)] w-full max-w-7xl overflow-y-auto rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-zinc-900 shadow-2xl">
-            <div className="border-b border-slate-200 dark:border-slate-700 px-6 py-5 md:px-8">
-              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/60 px-3 py-4 backdrop-blur-sm sm:px-6 md:py-8">
+          <div className="mx-auto flex max-h-[calc(100vh-2rem)] w-full max-w-[1180px] flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl shadow-slate-950/20 dark:border-slate-700 dark:bg-zinc-900 md:max-h-[calc(100vh-4rem)]">
+            <div className="border-b border-slate-200 bg-white/95 px-5 py-5 dark:border-slate-700 dark:bg-zinc-900/95 md:px-8">
+              <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
                 <div>
-                  <h3 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Credit Request Cart</h3>
-                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Review details carefully before submitting.</p>
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Review & Submit</p>
+                  <h3 className="mt-1 text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">Credit Request Cart</h3>
+                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Review request details, pickup status, photo evidence, and notes before submitting.</p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex w-full items-center gap-2 overflow-x-auto pb-1 lg:w-auto lg:justify-end lg:overflow-visible lg:pb-0">
                   <button
                     type="button"
                     onClick={() => void sendCreditRequest()}
                     disabled={displayRows.length === 0 || isSending || isRemovingAll}
-                    className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="inline-flex h-10 min-w-[168px] shrink-0 items-center justify-center whitespace-nowrap rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-white"
                   >
                     {isSending ? "Preparing Email Draft..." : "Send Credit Request"}
                   </button>
@@ -513,14 +518,14 @@ export function GlobalCartWidget() {
                     type="button"
                     onClick={() => void removeAllFromCart()}
                     disabled={(items.length === 0 && pictures.length === 0) || isRemovingAll}
-                    className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="inline-flex h-10 min-w-[112px] shrink-0 items-center justify-center whitespace-nowrap rounded-xl border border-rose-300 bg-rose-50 px-4 text-sm font-semibold text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {isRemovingAll ? "Removing..." : "Remove All"}
                   </button>
                   <button
                     type="button"
                     onClick={closeCartModal}
-                    className="rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm text-slate-700 dark:text-slate-200 transition hover:bg-slate-50 dark:hover:bg-slate-800/60 dark:bg-slate-900/40"
+                    className="inline-flex h-10 min-w-[92px] shrink-0 items-center justify-center whitespace-nowrap rounded-xl border border-slate-300 px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-200 dark:hover:bg-slate-800/60"
                   >
                     Close
                   </button>
@@ -529,15 +534,29 @@ export function GlobalCartWidget() {
 
             </div>
 
-            <div className="space-y-6 px-6 py-6 md:px-8">
+            <div className="flex-1 space-y-6 overflow-y-auto px-5 py-6 md:px-8">
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-900/50">
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Items</p>
+                  <p className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">{cartItemCount}</p>
+                </div>
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-900/50">
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Photos</p>
+                  <p className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">{pictures.length}</p>
+                </div>
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-900/50">
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Total Credit</p>
+                  <p className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">${totalCreditAmount.toFixed(2)}</p>
+                </div>
+              </div>
               {displayRows.length === 0 ? (
                 <p className="rounded-xl border border-dashed border-slate-300 dark:border-slate-700 px-4 py-5 text-sm text-slate-500 dark:text-slate-400">
                   No items in cart yet.
                 </p>
               ) : (
-                <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
+                <div className="overflow-x-auto rounded-2xl border border-slate-200 shadow-sm dark:border-slate-700">
                   <table className="min-w-full text-sm">
-                    <thead className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200">
+                    <thead className="bg-slate-100 text-xs uppercase tracking-wide text-slate-600 dark:bg-slate-800 dark:text-slate-200">
                       <tr>
                         <th className="px-3 py-3 text-left font-semibold">Need Pick-up</th>
                         <th className="px-3 py-3 text-left font-semibold">Customer Code</th>
@@ -555,7 +574,7 @@ export function GlobalCartWidget() {
                     </thead>
                     <tbody>
                       {displayRows.map((item) => (
-                        <tr key={item.id} className="border-t border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200">
+                        <tr key={item.id} className="border-t border-slate-200 text-slate-700 transition hover:bg-slate-50/80 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800/40">
                           <td className="px-3 py-3">
                             <input
                               type="checkbox"
@@ -581,7 +600,7 @@ export function GlobalCartWidget() {
                             <button
                               type="button"
                               onClick={() => void removeItem(item.id)}
-                              className="rounded-md border border-slate-300 dark:border-slate-700 px-2 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/60 dark:bg-slate-900/40"
+                              className="inline-flex h-8 min-w-[76px] items-center justify-center whitespace-nowrap rounded-lg border border-slate-300 px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-200 dark:hover:bg-slate-800/60"
                             >
                               Remove
                             </button>
@@ -593,7 +612,7 @@ export function GlobalCartWidget() {
                 </div>
               )}
 
-              <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 p-4">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-700 dark:bg-slate-900/40">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Photo Evidence</p>
@@ -613,7 +632,7 @@ export function GlobalCartWidget() {
                     htmlFor={fileInputId}
                     onClick={onPickPictures}
                     aria-disabled={isUploadingPictures}
-                    className={`rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:bg-slate-800 ${
+                    className={`inline-flex h-10 min-w-[116px] items-center justify-center whitespace-nowrap rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 ${
                       isUploadingPictures ? "cursor-not-allowed opacity-50" : "cursor-pointer"
                     }`}
                   >
@@ -676,8 +695,8 @@ export function GlobalCartWidget() {
                 ) : null}
               </div>
 
-              <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 p-4">
-                <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Notes:</p>
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-700 dark:bg-slate-900/40">
+                <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Notes</p>
                 <textarea
                   value={notes}
                   onChange={(event) => setNotes(event.target.value)}
@@ -715,9 +734,12 @@ export function GlobalCartWidget() {
                   ✕
                 </button>
                 {!isPreviewImageBroken ? (
-                  <img
+                  <Image
                     src={selectedPicture.publicUrl}
                     alt={selectedPicture.fileName}
+                    width={1200}
+                    height={900}
+                    unoptimized
                     className="max-h-[90vh] max-w-[90vw] rounded-lg object-contain"
                     onError={() => setIsPreviewImageBroken(true)}
                   />
