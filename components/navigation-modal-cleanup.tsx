@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { flushSync } from "react-dom";
 import { usePathname } from "next/navigation";
 
 export const MODAL_NAVIGATION_CLEANUP_EVENT = "credit-request:modal-navigation-cleanup";
@@ -25,8 +26,15 @@ export function cleanupDocumentInteractionState() {
   }
 }
 
-function requestModalStateReset() {
-  window.dispatchEvent(new Event(MODAL_NAVIGATION_CLEANUP_EVENT));
+function requestModalStateReset({ sync = false }: { sync?: boolean } = {}) {
+  if (sync) {
+    flushSync(() => {
+      window.dispatchEvent(new Event(MODAL_NAVIGATION_CLEANUP_EVENT));
+    });
+  } else {
+    window.dispatchEvent(new Event(MODAL_NAVIGATION_CLEANUP_EVENT));
+  }
+
   cleanupDocumentInteractionState();
 }
 
@@ -49,15 +57,24 @@ export function NavigationModalCleanup() {
       requestModalStateReset();
     }
 
+    function handlePageHide() {
+      // On mobile swipe/back navigations the outgoing page can be frozen into
+      // bfcache before a later pageshow cleanup has a chance to run. Close any
+      // React-owned modal state synchronously so the cached snapshot is clean.
+      requestModalStateReset({ sync: true });
+    }
+
     function handlePopState() {
       requestModalStateReset();
     }
 
     window.addEventListener("pageshow", handlePageShow);
+    window.addEventListener("pagehide", handlePageHide);
     window.addEventListener("popstate", handlePopState);
 
     return () => {
       window.removeEventListener("pageshow", handlePageShow);
+      window.removeEventListener("pagehide", handlePageHide);
       window.removeEventListener("popstate", handlePopState);
       cleanupDocumentInteractionState();
     };
