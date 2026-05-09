@@ -80,6 +80,9 @@ export function GlobalCartWidget() {
   const [isRemovingAll, setIsRemovingAll] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
   const [removeAllError, setRemoveAllError] = useState<string | null>(null);
+  const [pendingPictureFiles, setPendingPictureFiles] = useState<File[]>([]);
+  const [isPhotoUploadConfirmOpen, setIsPhotoUploadConfirmOpen] = useState(false);
+  const [isRemoveAllConfirmOpen, setIsRemoveAllConfirmOpen] = useState(false);
   const [notes, setNotes] = useState("");
   const [pickupSelectionsById, setPickupSelectionsById] = useState<Record<string, boolean>>({});
   const [cartInteractionRevision, setCartInteractionRevision] = useState(0);
@@ -199,6 +202,9 @@ export function GlobalCartWidget() {
     setIsUploadingPictures(false);
     setSelectedPicture(null);
     setIsPreviewImageBroken(false);
+    setPendingPictureFiles([]);
+    setIsPhotoUploadConfirmOpen(false);
+    setIsRemoveAllConfirmOpen(false);
     setSendError(null);
     setRemoveAllError(null);
     refreshCartInteractionState();
@@ -254,24 +260,16 @@ export function GlobalCartWidget() {
   }
 
   function onPickPictures(event: ReactMouseEvent<HTMLButtonElement>) {
-    if (isUploadingPictures) {
+    if (isUploadingPictures || isPhotoUploadConfirmOpen) {
       event.preventDefault();
       return;
     }
 
-    const isConfirmed = window.confirm("Please make sure LOT NUMBER is visible.");
-    if (!isConfirmed) {
-      event.preventDefault();
-      return;
-    }
-
+    setPhotoError(null);
     fileInputRef.current?.click();
   }
 
-  async function onPicturesSelected(event: ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(event.target.files ?? []);
-    event.target.value = "";
-
+  async function uploadSelectedPictures(files: File[]) {
     if (files.length === 0) {
       return;
     }
@@ -306,6 +304,30 @@ export function GlobalCartWidget() {
     }
   }
 
+  function onPicturesSelected(event: ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(event.target.files ?? []);
+    event.target.value = "";
+
+    if (files.length === 0) {
+      return;
+    }
+
+    setPendingPictureFiles(files);
+    setIsPhotoUploadConfirmOpen(true);
+  }
+
+  async function confirmPictureUpload() {
+    const files = pendingPictureFiles;
+    setPendingPictureFiles([]);
+    setIsPhotoUploadConfirmOpen(false);
+    await uploadSelectedPictures(files);
+  }
+
+  function cancelPictureUpload() {
+    setPendingPictureFiles([]);
+    setIsPhotoUploadConfirmOpen(false);
+  }
+
   async function removePicture(photoId: string) {
     const response = await fetch("/api/cart/photos", {
       method: "DELETE",
@@ -324,22 +346,29 @@ export function GlobalCartWidget() {
     setSelectedPicture((currentPicture) => (currentPicture?.id === photoId ? null : currentPicture));
   }
 
-  async function removeAllFromCart() {
+  function removeAllFromCart() {
     if ((items.length === 0 && pictures.length === 0) || isRemovingAll) {
       return;
     }
 
-    const confirmed = window.confirm(
-      "Remove all credit request cart items and all uploaded photo evidence? This action cannot be undone.",
-    );
-    if (!confirmed) {
+    setRemoveAllError(null);
+    setIsRemoveAllConfirmOpen(true);
+  }
+
+  async function confirmRemoveAllFromCart() {
+    if ((items.length === 0 && pictures.length === 0) || isRemovingAll) {
       return;
     }
 
+    setIsRemoveAllConfirmOpen(false);
     const wasRemoved = await clearCartData();
     if (!wasRemoved) {
       setRemoveAllError("Failed to remove all cart data.");
     }
+  }
+
+  function cancelRemoveAllFromCart() {
+    setIsRemoveAllConfirmOpen(false);
   }
 
   async function clearCartData() {
@@ -358,6 +387,9 @@ export function GlobalCartWidget() {
       setSelectedPicture(null);
       setItems([]);
       setPictures([]);
+      setPendingPictureFiles([]);
+      setIsPhotoUploadConfirmOpen(false);
+      setIsRemoveAllConfirmOpen(false);
       setNotes("");
       setPhotoError(null);
       await loadCart();
@@ -564,7 +596,7 @@ export function GlobalCartWidget() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => void removeAllFromCart()}
+                    onClick={removeAllFromCart}
                     disabled={(items.length === 0 && pictures.length === 0) || isRemovingAll}
                     className="inline-flex h-9 min-w-0 items-center justify-center truncate whitespace-nowrap rounded-lg border border-rose-300 bg-rose-50 px-2.5 text-xs font-semibold text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50 sm:px-3 lg:min-w-[104px]"
                   >
@@ -676,12 +708,35 @@ export function GlobalCartWidget() {
                   <button
                     type="button"
                     onClick={onPickPictures}
-                    disabled={isUploadingPictures}
+                    disabled={isUploadingPictures || isPhotoUploadConfirmOpen}
                     className="inline-flex h-10 min-w-[116px] items-center justify-center whitespace-nowrap rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
                   >
                     {isUploadingPictures ? "Uploading..." : "Add Photos"}
                   </button>
                 </div>
+
+                {isPhotoUploadConfirmOpen ? (
+                  <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                    <p className="font-semibold">Please make sure LOT NUMBER is visible.</p>
+                    <p className="mt-1 text-xs">Upload {pendingPictureFiles.length} selected photo{pendingPictureFiles.length === 1 ? "" : "s"}?</p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => void confirmPictureUpload()}
+                        className="inline-flex h-8 items-center justify-center rounded-lg bg-amber-900 px-3 text-xs font-semibold text-white transition hover:bg-amber-800"
+                      >
+                        Upload Photos
+                      </button>
+                      <button
+                        type="button"
+                        onClick={cancelPictureUpload}
+                        className="inline-flex h-8 items-center justify-center rounded-lg border border-amber-300 bg-white px-3 text-xs font-semibold text-amber-900 transition hover:bg-amber-100"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
 
                 <div className="mt-4 min-h-14 rounded-lg border border-dashed border-slate-300 dark:border-slate-700 bg-white dark:bg-zinc-900 p-3">
                   {isUploadingPictures ? (
@@ -747,6 +802,31 @@ export function GlobalCartWidget() {
                   className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-slate-700 dark:text-slate-200 outline-none ring-0 transition focus:border-slate-400"
                 />
               </div>
+
+              {isRemoveAllConfirmOpen ? (
+                <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+                  <p className="font-semibold">Remove all credit request cart items and all uploaded photo evidence?</p>
+                  <p className="mt-1 text-xs">This action cannot be undone.</p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => void confirmRemoveAllFromCart()}
+                      disabled={isRemovingAll}
+                      className="inline-flex h-8 items-center justify-center rounded-lg bg-rose-700 px-3 text-xs font-semibold text-white transition hover:bg-rose-800 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {isRemovingAll ? "Removing..." : "Yes, Remove All"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={cancelRemoveAllFromCart}
+                      disabled={isRemovingAll}
+                      className="inline-flex h-8 items-center justify-center rounded-lg border border-rose-300 bg-white px-3 text-xs font-semibold text-rose-800 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : null}
 
               {sendError ? (
                 <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{sendError}</p>
