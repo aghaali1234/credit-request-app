@@ -503,29 +503,29 @@ export function GlobalCartWidget() {
                 <div>
                   <h3 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">Credit Request Cart</h3>
                 </div>
-                <div className="flex w-full items-center gap-2 overflow-x-auto pb-1 lg:w-auto lg:justify-end lg:overflow-visible lg:pb-0">
+                <div className="grid w-full grid-cols-3 items-center gap-2 lg:flex lg:w-auto lg:justify-end">
                   <button
                     type="button"
                     onClick={() => void sendCreditRequest()}
                     disabled={displayRows.length === 0 || isSending || isRemovingAll}
-                    className="inline-flex h-10 min-w-[168px] shrink-0 items-center justify-center whitespace-nowrap rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-white"
+                    className="inline-flex h-9 min-w-0 items-center justify-center truncate whitespace-nowrap rounded-lg bg-slate-900 px-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50 sm:px-3 lg:min-w-[132px] dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-white"
                   >
-                    {isSending ? "Preparing Email Draft..." : "Send Credit"}
+                    <span className="truncate">{isSending ? "Preparing..." : "Send Credit"}</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => void removeAllFromCart()}
                     disabled={(items.length === 0 && pictures.length === 0) || isRemovingAll}
-                    className="inline-flex h-10 min-w-[112px] shrink-0 items-center justify-center whitespace-nowrap rounded-xl border border-rose-300 bg-rose-50 px-4 text-sm font-semibold text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="inline-flex h-9 min-w-0 items-center justify-center truncate whitespace-nowrap rounded-lg border border-rose-300 bg-rose-50 px-2.5 text-xs font-semibold text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50 sm:px-3 lg:min-w-[104px]"
                   >
-                    {isRemovingAll ? "Removing..." : "Remove All"}
+                    <span className="truncate">{isRemovingAll ? "Removing..." : "Remove All"}</span>
                   </button>
                   <button
                     type="button"
                     onClick={closeCartModal}
-                    className="inline-flex h-10 min-w-[92px] shrink-0 items-center justify-center whitespace-nowrap rounded-xl border border-slate-300 px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-200 dark:hover:bg-slate-800/60"
+                    className="inline-flex h-9 min-w-0 items-center justify-center truncate whitespace-nowrap rounded-lg border border-slate-300 px-2.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 sm:px-3 lg:min-w-[80px] dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-200 dark:hover:bg-slate-800/60"
                   >
-                    Close
+                    <span className="truncate">Close</span>
                   </button>
                 </div>
               </div>
@@ -533,14 +533,14 @@ export function GlobalCartWidget() {
             </div>
 
             <div className="flex-1 space-y-6 overflow-y-auto px-5 py-6 md:px-8">
-              <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-900/50">
-                <div className="flex min-w-[120px] items-center justify-between gap-4 rounded-xl bg-white px-3 py-2 shadow-sm dark:bg-zinc-900">
-                  <span className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Item</span>
-                  <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">{cartItemCount}</span>
+              <div className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 dark:border-slate-700 dark:bg-slate-900/50 sm:px-4">
+                <div className="flex min-w-0 flex-1 items-center justify-between gap-2 rounded-xl bg-white px-3 py-2 shadow-sm dark:bg-zinc-900 sm:flex-none sm:min-w-[120px] sm:gap-4">
+                  <span className="truncate text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Item</span>
+                  <span className="shrink-0 text-sm font-semibold text-slate-900 dark:text-slate-100">{cartItemCount}</span>
                 </div>
-                <div className="flex min-w-[180px] items-center justify-between gap-4 rounded-xl bg-white px-3 py-2 shadow-sm dark:bg-zinc-900">
-                  <span className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Total Credit</span>
-                  <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">${totalCreditAmount.toFixed(2)}</span>
+                <div className="flex min-w-0 flex-1 items-center justify-between gap-2 rounded-xl bg-white px-3 py-2 shadow-sm dark:bg-zinc-900 sm:flex-none sm:min-w-[180px] sm:gap-4">
+                  <span className="truncate text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Total Credit</span>
+                  <span className="shrink-0 text-sm font-semibold text-slate-900 dark:text-slate-100">${totalCreditAmount.toFixed(2)}</span>
                 </div>
               </div>
               {displayRows.length === 0 ? (
