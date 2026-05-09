@@ -185,10 +185,12 @@ export function GlobalCartWidget() {
     setAuthorized(true);
   }, []);
 
-  const scheduleCartInteractionRefresh = useCallback(() => {
-    window.requestAnimationFrame(() => {
-      setCartInteractionRevision((currentRevision) => currentRevision + 1);
-    });
+  const refreshCartInteractionState = useCallback(() => {
+    // Mobile bfcache restores can keep stale DOM listeners until React commits a
+    // fresh tree. Bump a key synchronously instead of relying on a deferred
+    // requestAnimationFrame callback that may run while the modal is closed or
+    // while the page is frozen.
+    setCartInteractionRevision((currentRevision) => currentRevision + 1);
   }, []);
 
   const resetCartTransientUiState = useCallback(() => {
@@ -199,8 +201,8 @@ export function GlobalCartWidget() {
     setIsPreviewImageBroken(false);
     setSendError(null);
     setRemoveAllError(null);
-    scheduleCartInteractionRefresh();
-  }, [scheduleCartInteractionRefresh]);
+    refreshCartInteractionState();
+  }, [refreshCartInteractionState]);
 
   const reinitializeCartUi = useCallback(() => {
     cleanupDocumentInteractionState();
