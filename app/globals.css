@@ -24,3 +24,14 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+.vagaro-widget-shell {
+  min-height: auto;
+}
+
+.vagaro-widget-shell iframe,
+.vagaro-widget-shell > div[id*="vagaro"],
+.vagaro-widget-shell > div[class*="vagaro"] {
+  max-height: 560px;
+  overflow: hidden;
+}

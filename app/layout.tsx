@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Turkana Food - Credit Request App",
-  description: "Created by muhasebe",
+  title: "Team Hair Pro",
+  description: "Signature salon styling and appointment booking in Tenafly, NJ.",
 };
 
 export const viewport: Viewport = {
