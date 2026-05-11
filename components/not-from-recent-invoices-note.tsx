@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import type { ChangeEvent, MouseEvent as ReactMouseEvent } from "react";
 
 import { cleanupDocumentInteractionState, MODAL_NAVIGATION_CLEANUP_EVENT } from "@/components/navigation-modal-cleanup";
@@ -34,19 +34,14 @@ export function NotFromRecentInvoicesNote({ customerCode }: NotFromRecentInvoice
   const [activeLookupField, setActiveLookupField] = useState<LookupSearchBy | null>(null);
   const lookupAbortControllerRef = useRef<AbortController | null>(null);
   const lookupDebounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pictureInputId = useId();
   const [isUploadingPicture, setIsUploadingPicture] = useState(false);
   const [pictureError, setPictureError] = useState<string | null>(null);
-  const [popupInteractionRevision, setPopupInteractionRevision] = useState(0);
-  const pictureInputRef = useRef<HTMLInputElement | null>(null);
 
   const resetLookupState = useCallback(() => {
     setItemOptions([]);
     setActiveLookupField(null);
     setIsItemLookupLoading(false);
-  }, []);
-
-  const refreshPopupInteractionState = useCallback(() => {
-    setPopupInteractionRevision((currentRevision) => currentRevision + 1);
   }, []);
 
   const resetTransientPopupState = useCallback(() => {
@@ -55,8 +50,7 @@ export function NotFromRecentInvoicesNote({ customerCode }: NotFromRecentInvoice
     setSubmitError(null);
     setPictureError(null);
     resetLookupState();
-    refreshPopupInteractionState();
-  }, [refreshPopupInteractionState, resetLookupState]);
+  }, [resetLookupState]);
 
   useLayoutEffect(() => {
     return () => {
@@ -177,14 +171,16 @@ export function NotFromRecentInvoicesNote({ customerCode }: NotFromRecentInvoice
     setIsModalOpen(false);
   }
 
-  function onPickPicture(event: ReactMouseEvent<HTMLButtonElement>) {
+  function onPickPicture(event: ReactMouseEvent<HTMLLabelElement>) {
     if (isUploadingPicture || isSubmitting) {
       event.preventDefault();
       return;
     }
 
-    setPictureError(null);
-    pictureInputRef.current?.click();
+    const isConfirmed = window.confirm("Please make sure LOT NUMBER is visible.");
+    if (!isConfirmed) {
+      event.preventDefault();
+    }
   }
 
   async function onPictureSelected(event: ChangeEvent<HTMLInputElement>) {
@@ -192,11 +188,6 @@ export function NotFromRecentInvoicesNote({ customerCode }: NotFromRecentInvoice
     event.target.value = "";
 
     if (files.length === 0) {
-      return;
-    }
-
-    const isConfirmed = window.confirm("Please make sure LOT NUMBER is visible.");
-    if (!isConfirmed) {
       return;
     }
 
@@ -312,11 +303,7 @@ export function NotFromRecentInvoicesNote({ customerCode }: NotFromRecentInvoice
       </div>
 
       {isModalOpen ? (
-        <div
-          key={popupInteractionRevision}
-          data-interaction-revision={popupInteractionRevision}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-        >
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="w-full max-w-xl rounded-lg bg-white dark:bg-zinc-900 p-5 shadow-xl">
             <div className="mb-4 flex items-start justify-between gap-4">
               <h3 className="text-lg font-semibold">Add Credit Note</h3>
@@ -465,7 +452,7 @@ export function NotFromRecentInvoicesNote({ customerCode }: NotFromRecentInvoice
             {pictureError ? <p className="mt-3 text-sm text-red-600">{pictureError}</p> : null}
 
             <input
-              ref={pictureInputRef}
+              id={pictureInputId}
               type="file"
               accept="image/*"
               className="sr-only"
@@ -474,14 +461,16 @@ export function NotFromRecentInvoicesNote({ customerCode }: NotFromRecentInvoice
             />
 
             <div className="mt-4 flex justify-end gap-2">
-              <button
-                type="button"
+              <label
+                htmlFor={pictureInputId}
                 onClick={onPickPicture}
-                disabled={isUploadingPicture || isSubmitting}
-                className="rounded-md border border-zinc-300 px-4 py-2 text-sm text-zinc-700 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-200"
+                aria-disabled={isUploadingPicture || isSubmitting}
+                className={`rounded-md border border-zinc-300 dark:border-zinc-700 px-4 py-2 text-sm text-zinc-700 dark:text-zinc-200 ${
+                  isUploadingPicture || isSubmitting ? "cursor-not-allowed opacity-50" : "cursor-pointer"
+                }`}
               >
                 {isUploadingPicture ? "Uploading..." : "Add Picture"}
-              </button>
+              </label>
               <button
                 type="button"
                 onClick={() => void addNoteToCart()}
