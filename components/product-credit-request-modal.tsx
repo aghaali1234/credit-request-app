@@ -3,7 +3,6 @@
 import {
   useCallback,
   useEffect,
-  useId,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -12,6 +11,7 @@ import {
   type MouseEvent as ReactMouseEvent,
 } from "react";
 
+import { useFreshFileInput } from "@/components/use-fresh-file-input";
 import { formatUsdCurrency } from "@/lib/currency";
 
 type InvoiceItem = {
@@ -72,7 +72,7 @@ export function ProductCreditRequestModal({ item, customerCode, invoiceNo, invoi
   const [isUploadingPicture, setIsUploadingPicture] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [pictureError, setPictureError] = useState<string | null>(null);
-  const pictureInputId = useId();
+  const { fileInputKey: pictureInputKey, fileInputRef: pictureInputRef, resetFileInput: resetPictureInput } = useFreshFileInput();
   const reasonDropdownRef = useRef<HTMLDivElement | null>(null);
 
   const resetTransientPopupState = useCallback(() => {
@@ -82,7 +82,8 @@ export function ProductCreditRequestModal({ item, customerCode, invoiceNo, invoi
     setPictureError(null);
     setIsReasonDropdownOpen(false);
     setIsMobileReasonSheetOpen(false);
-  }, []);
+    resetPictureInput();
+  }, [resetPictureInput]);
 
   useLayoutEffect(() => {
     return () => {
@@ -231,16 +232,14 @@ export function ProductCreditRequestModal({ item, customerCode, invoiceNo, invoi
     onClose();
   }
 
-  function onPickPicture(event: ReactMouseEvent<HTMLLabelElement>) {
+  function onPickPicture(event: ReactMouseEvent<HTMLButtonElement>) {
     if (isUploadingPicture || isSubmitting) {
       event.preventDefault();
       return;
     }
 
-    const isConfirmed = window.confirm("Please make sure LOT NUMBER is visible.");
-    if (!isConfirmed) {
-      event.preventDefault();
-    }
+    setPictureError(null);
+    pictureInputRef.current?.click();
   }
 
   async function onPictureSelected(event: ChangeEvent<HTMLInputElement>) {
@@ -248,6 +247,11 @@ export function ProductCreditRequestModal({ item, customerCode, invoiceNo, invoi
     event.target.value = "";
 
     if (files.length === 0) {
+      return;
+    }
+
+    const isConfirmed = window.confirm("Please make sure LOT NUMBER is visible.");
+    if (!isConfirmed) {
       return;
     }
 
@@ -555,7 +559,8 @@ export function ProductCreditRequestModal({ item, customerCode, invoiceNo, invoi
           {pictureError ? <p className="mt-3 text-sm text-red-600">{pictureError}</p> : null}
 
           <input
-            id={pictureInputId}
+            key={pictureInputKey}
+            ref={pictureInputRef}
             type="file"
             accept="image/*"
             className="sr-only"
@@ -564,16 +569,14 @@ export function ProductCreditRequestModal({ item, customerCode, invoiceNo, invoi
           />
 
           <div className="mt-3 flex justify-end gap-2 sm:mt-4">
-            <label
-              htmlFor={pictureInputId}
+            <button
+              type="button"
               onClick={onPickPicture}
-              aria-disabled={isUploadingPicture || isSubmitting}
-              className={`rounded-md border border-zinc-300 dark:border-zinc-700 px-4 py-2 text-sm text-zinc-700 dark:text-zinc-200 ${
-                isUploadingPicture || isSubmitting ? "cursor-not-allowed opacity-50" : "cursor-pointer"
-              }`}
+              disabled={isUploadingPicture || isSubmitting}
+              className="rounded-md border border-zinc-300 px-4 py-2 text-sm text-zinc-700 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-200"
             >
-              {isUploadingPicture ? "Uploading..." : "Add Picture"}
-            </label>
+              {isUploadingPicture ? "Uploading..." : "Add Photos"}
+            </button>
             <button
               type="button"
               onClick={() => void addSelectedItemToCart()}

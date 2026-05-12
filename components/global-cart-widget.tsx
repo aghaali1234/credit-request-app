@@ -4,6 +4,7 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react"
 import type { ChangeEvent, MouseEvent as ReactMouseEvent } from "react";
 import Image from "next/image";
 import { cleanupDocumentInteractionState, MODAL_NAVIGATION_CLEANUP_EVENT } from "@/components/navigation-modal-cleanup";
+import { useFreshFileInput } from "@/components/use-fresh-file-input";
 import type { CreditRequestCartItem } from "@/lib/credit-request-email";
 
 type CartItem = CreditRequestCartItem;
@@ -87,7 +88,7 @@ export function GlobalCartWidget() {
   const [pickupSelectionsById, setPickupSelectionsById] = useState<Record<string, boolean>>({});
   const [cartInteractionRevision, setCartInteractionRevision] = useState(0);
   const fileInputId = useId();
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const { fileInputKey, fileInputRef, resetFileInput } = useFreshFileInput();
   const removeAllConfirmButtonRef = useRef<HTMLButtonElement | null>(null);
 
   const cartRows = useMemo(() => {
@@ -208,8 +209,9 @@ export function GlobalCartWidget() {
     setIsRemoveAllConfirmOpen(false);
     setSendError(null);
     setRemoveAllError(null);
+    resetFileInput();
     refreshCartInteractionState();
-  }, [refreshCartInteractionState]);
+  }, [refreshCartInteractionState, resetFileInput]);
 
   const reinitializeCartUi = useCallback(() => {
     cleanupDocumentInteractionState();
@@ -727,6 +729,7 @@ export function GlobalCartWidget() {
                     <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Photo Evidence</p>
                   </div>
                   <input
+                    key={fileInputKey}
                     ref={fileInputRef}
                     id={fileInputId}
                     type="file"
