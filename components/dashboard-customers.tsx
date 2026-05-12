@@ -221,14 +221,14 @@ export function DashboardCustomers({ initialCustomers }: DashboardCustomersProps
 
       {isTutorialOpen ? (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-3"
           role="dialog"
           aria-modal="true"
           aria-label="Tutorial video"
           onClick={closeTutorial}
         >
           <div
-            className="relative w-full max-w-4xl rounded-xl bg-white p-3 shadow-2xl dark:bg-zinc-950 sm:p-4"
+            className="relative w-full max-w-[390px] rounded-xl bg-white p-3 shadow-2xl dark:bg-zinc-950"
             onClick={(event) => event.stopPropagation()}
           >
             <button
@@ -245,7 +245,7 @@ export function DashboardCustomers({ initialCustomers }: DashboardCustomersProps
               controls
               playsInline
               preload="auto"
-              className="aspect-video w-full rounded-lg bg-black"
+              className="aspect-[9/16] max-h-[82vh] w-full rounded-lg bg-black object-contain"
             >
               <source src="/api/tutorial-video" type="video/mp4" />
             </video>
