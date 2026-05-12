@@ -141,7 +141,6 @@ export function buildCreditRequestDraftText({
 
   const uniqueCustomers = [...new Set(cartRows.map((item) => item.customer_code).filter(Boolean))];
   const uniqueInvoices = [...new Set(cartRows.map((item) => item.invoice_no).filter(Boolean))];
-  const uniqueInvoiceDates = [...new Set(cartRows.map((item) => (item.invoice_date ?? "").trim()).filter(Boolean))];
   const totalCreditAmount = cartRows.reduce((sum, item) => sum + Number(item.credit_amount || 0), 0);
 
   const subject = `Credit Request - Customer ${uniqueCustomers.join(", ") || "N/A"} - Invoice ${
@@ -165,7 +164,6 @@ export function buildCreditRequestDraftText({
     `Customer Code: ${uniqueCustomers.join(", ") || "-"}`,
     `Customer Name: ${compactText(customerName || "-", 64)}`,
     `Invoice No: ${uniqueInvoices.join(", ") || "-"}`,
-    `Invoice Date: ${uniqueInvoiceDates.join(", ") || "-"}`,
     `Total Requested Credit Amount: ${money(totalCreditAmount)}`,
     "",
     ...selectedItemLines,
