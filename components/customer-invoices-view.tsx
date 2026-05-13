@@ -282,9 +282,6 @@ export function CustomerInvoicesView({ customerCode, invoices, initialTab = "inv
                 <p className="text-zinc-600 dark:text-zinc-300">
                   {activeTab === "invoices" ? "Invoice Date" : "Credit Date"}: {invoice.invoice_date}
                 </p>
-                {activeTab === "credits" ? (
-                  <p className="text-zinc-600 dark:text-zinc-300">Reason: {formatFreeTxtReason(invoice.free_txt)}</p>
-                ) : null}
               </Link>
             </li>
           ))}
