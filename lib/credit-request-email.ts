@@ -26,6 +26,27 @@ export type UploadedPhotoReference = {
 const CREDIT_REQUEST_RECIPIENT = "credit@turkanafood.com";
 const CREDIT_REQUEST_CC_RECIPIENT = "yerdogan@turkanafood.com";
 
+function normalizeEmailRecipients(recipients: string[]) {
+  const uniqueRecipients = new Map<string, string>();
+
+  for (const recipient of recipients) {
+    const normalizedRecipients = recipient
+      .split(/[;,]/)
+      .map((email) => email.trim())
+      .filter(Boolean);
+
+    for (const normalizedRecipient of normalizedRecipients) {
+      const dedupeKey = normalizedRecipient.toLowerCase();
+
+      if (!uniqueRecipients.has(dedupeKey)) {
+        uniqueRecipients.set(dedupeKey, normalizedRecipient);
+      }
+    }
+  }
+
+  return [...uniqueRecipients.values()];
+}
+
 function money(value: number) {
   return Number.isFinite(value) ? value.toFixed(2) : "0.00";
 }
@@ -182,9 +203,18 @@ export function buildCreditRequestDraftText({
   };
 }
 
-export function buildCreditRequestMailtoUrl({ subject, text }: { subject: string; text: string }) {
+export function buildCreditRequestMailtoUrl({
+  subject,
+  text,
+  ccRecipients = [],
+}: {
+  subject: string;
+  text: string;
+  ccRecipients?: string[];
+}) {
+  const ccList = encodeMailtoValue(normalizeEmailRecipients([CREDIT_REQUEST_CC_RECIPIENT, ...ccRecipients]).join("; "));
   const buildUrl = (body: string) =>
-    `mailto:${CREDIT_REQUEST_RECIPIENT}?cc=${encodeMailtoValue(CREDIT_REQUEST_CC_RECIPIENT)}&subject=${encodeMailtoValue(subject)}&body=${encodeMailtoValue(body)}`;
+    `mailto:${CREDIT_REQUEST_RECIPIENT}?cc=${ccList}&subject=${encodeMailtoValue(subject)}&body=${encodeMailtoValue(body)}`;
   return {
     url: buildUrl(text),
     isBodyTruncated: false,
