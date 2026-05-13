@@ -18,6 +18,7 @@ type InvoiceItemRow = {
   sales_lot_no: string | null;
   batch_expiration_date: string | null;
   piece_price: number | string | null;
+  free_txt?: string | null;
 };
 
 type InvoiceItemsPageProps = {
@@ -53,6 +54,7 @@ export default async function InvoiceItemsPage({ params }: InvoiceItemsPageProps
     sales_lot_no: string;
     batch_expiration_date: string;
     piece_price: number;
+    free_txt?: string | null;
   }> = [];
 
   function toNumber(value: number | string | null): number | null {
@@ -70,13 +72,15 @@ export default async function InvoiceItemsPage({ params }: InvoiceItemsPageProps
     return null;
   }
 
+  const itemSelectColumns = isCreditInvoice
+    ? "customer_name,invoice_date,item_no,item_descp,quantity,sales_amount,sales_batch_number,sales_lot_no,batch_expiration_date,piece_price,free_txt"
+    : "customer_name,invoice_date,item_no,item_descp,quantity,sales_amount,sales_batch_number,sales_lot_no,batch_expiration_date,piece_price";
+
   while (hasMore) {
     const to = from + pageSize - 1;
     let query = supabaseAdmin
       .from("credit_rows")
-      .select(
-        "customer_name,invoice_date,item_no,item_descp,quantity,sales_amount,sales_batch_number,sales_lot_no,batch_expiration_date,piece_price",
-      )
+      .select(itemSelectColumns)
       .eq("customer_code", customerCode)
       .eq("invoice_no", invoiceNo)
       .order("item_no", { ascending: true })
@@ -92,7 +96,7 @@ export default async function InvoiceItemsPage({ params }: InvoiceItemsPageProps
       throw new Error("Failed to fetch invoice items");
     }
 
-    const rows = (data as InvoiceItemRow[]) ?? [];
+    const rows = (data as unknown as InvoiceItemRow[]) ?? [];
 
     for (const row of rows) {
       if (!customerName && row.customer_name) {
@@ -126,6 +130,7 @@ export default async function InvoiceItemsPage({ params }: InvoiceItemsPageProps
           sales_lot_no: row.sales_lot_no,
           batch_expiration_date: row.batch_expiration_date,
           piece_price: piecePrice,
+          free_txt: row.free_txt ?? null,
         });
       }
     }
@@ -158,7 +163,7 @@ export default async function InvoiceItemsPage({ params }: InvoiceItemsPageProps
 
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">{isCreditInvoice ? "Credit Items" : "Invoice Items"}</h2>
-        <InvoiceItemsTable items={items} customerCode={customerCode} invoiceNo={invoiceNo} invoiceDate={invoiceDate} allowItemSelection={!isCreditInvoice} />
+        <InvoiceItemsTable items={items} customerCode={customerCode} invoiceNo={invoiceNo} invoiceDate={invoiceDate} allowItemSelection={!isCreditInvoice} showReason={isCreditInvoice} />
       </section>
     </main>
   );

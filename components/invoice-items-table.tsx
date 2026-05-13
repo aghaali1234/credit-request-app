@@ -6,15 +6,32 @@ import { MODAL_NAVIGATION_CLEANUP_EVENT } from "@/components/navigation-modal-cl
 import { ProductCreditRequestModal, type InvoiceItem } from "@/components/product-credit-request-modal";
 import { formatUsdCurrency } from "@/lib/currency";
 
+function formatFreeTxtReason(freeTxt: string | null | undefined) {
+  const trimmedReason = freeTxt?.trim();
+  return trimmedReason && trimmedReason !== "0" ? trimmedReason : "-";
+}
+
+type InvoiceItemWithReason = InvoiceItem & {
+  free_txt?: string | null;
+};
+
 type InvoiceItemsTableProps = {
-  items: InvoiceItem[];
+  items: InvoiceItemWithReason[];
   customerCode: string;
   invoiceNo: string;
   invoiceDate?: string | null;
   allowItemSelection?: boolean;
+  showReason?: boolean;
 };
 
-export function InvoiceItemsTable({ items, customerCode, invoiceNo, invoiceDate, allowItemSelection = true }: InvoiceItemsTableProps) {
+export function InvoiceItemsTable({
+  items,
+  customerCode,
+  invoiceNo,
+  invoiceDate,
+  allowItemSelection = true,
+  showReason = false,
+}: InvoiceItemsTableProps) {
   const [selectedItem, setSelectedItem] = useState<InvoiceItem | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -41,6 +58,8 @@ export function InvoiceItemsTable({ items, customerCode, invoiceNo, invoiceDate,
       window.removeEventListener(MODAL_NAVIGATION_CLEANUP_EVENT, resetPopupState);
     };
   }, []);
+
+  const showReasonColumn = showReason;
 
   const totals = useMemo(
     () =>
@@ -78,6 +97,7 @@ export function InvoiceItemsTable({ items, customerCode, invoiceNo, invoiceDate,
               <th className="px-3 py-2 font-medium">Item Description</th>
               <th className="px-3 py-2 font-medium">Quantity</th>
               <th className="px-3 py-2 font-medium">Sales Amount</th>
+              {showReasonColumn ? <th className="px-3 py-2 font-medium">Reason</th> : null}
             </tr>
           </thead>
           <tbody>
@@ -109,11 +129,12 @@ export function InvoiceItemsTable({ items, customerCode, invoiceNo, invoiceDate,
                   <td className="px-3 py-2">{item.item_descp}</td>
                   <td className="px-3 py-2">{item.quantity}</td>
                   <td className="px-3 py-2">{formatUsdCurrency(item.sales_amount)}</td>
+                  {showReasonColumn ? <td className="px-3 py-2">{formatFreeTxtReason(item.free_txt)}</td> : null}
                 </tr>
               ))
             ) : (
               <tr className="border-t border-zinc-200 dark:border-zinc-800">
-                <td colSpan={4} className="px-3 py-4 text-center text-zinc-500 dark:text-zinc-400">
+                <td colSpan={showReasonColumn ? 5 : 4} className="px-3 py-4 text-center text-zinc-500 dark:text-zinc-400">
                   No items match your search.
                 </td>
               </tr>
@@ -127,6 +148,7 @@ export function InvoiceItemsTable({ items, customerCode, invoiceNo, invoiceDate,
                 </td>
                 <td className="px-3 py-2">{totals.quantity}</td>
                 <td className="px-3 py-2">{formatUsdCurrency(totals.salesAmount)}</td>
+                {showReasonColumn ? <td className="px-3 py-2" /> : null}
               </tr>
             </tfoot>
           ) : null}
