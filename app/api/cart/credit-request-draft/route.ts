@@ -20,6 +20,10 @@ type CustomerNameRow = {
   customer_name: string | null;
 };
 
+type CustomerBpEmailRow = {
+  bp_email: string | null;
+};
+
 async function loadCustomerNameForDraft({
   salesperson,
   customerCode,
@@ -47,6 +51,45 @@ async function loadCustomerNameForDraft({
   }
 
   return (data as CustomerNameRow | null)?.customer_name ?? null;
+}
+
+async function loadBpEmailsForDraft({
+  salesperson,
+  customerCodes,
+}: {
+  salesperson: string;
+  customerCodes: string[];
+}) {
+  const normalizedCustomerCodes = [...new Set(customerCodes.map((code) => code.trim()).filter(Boolean))];
+
+  if (normalizedCustomerCodes.length === 0) {
+    return [];
+  }
+
+  const supabaseAdmin = getSupabaseAdmin();
+  const { data, error } = await supabaseAdmin
+    .from("credit_rows")
+    .select("bp_email")
+    .eq("salesperson", salesperson)
+    .in("customer_code", normalizedCustomerCodes)
+    .not("bp_email", "is", null);
+
+  if (error) {
+    console.error("Failed to load customer BP email for draft", error);
+    return [];
+  }
+
+  const uniqueEmails = new Set<string>();
+
+  for (const row of (data ?? []) as CustomerBpEmailRow[]) {
+    const bpEmail = row.bp_email?.trim();
+
+    if (bpEmail) {
+      uniqueEmails.add(bpEmail);
+    }
+  }
+
+  return [...uniqueEmails];
 }
 
 function isValidCartItem(value: unknown): value is CreditRequestCartItem {
@@ -125,6 +168,10 @@ export async function POST(request: Request) {
       salesperson: session.user.salespersonName,
       customerCode: cartRows[0]?.customer_code ?? null,
     });
+    const bpEmailCcRecipients = await loadBpEmailsForDraft({
+      salesperson: session.user.salespersonName,
+      customerCodes: cartRows.map((row) => row.customer_code),
+    });
 
     const uploadedPhotos: PersistedPhotoRef[] = persistedPhotos.map((photo) => ({
       fileName: photo.file_name,
@@ -141,6 +188,7 @@ export async function POST(request: Request) {
     const mailtoDraft = buildCreditRequestMailtoUrl({
       subject,
       text: draft.text,
+      ccRecipients: bpEmailCcRecipients,
     });
 
     return Response.json({
