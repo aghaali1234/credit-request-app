@@ -23,6 +23,7 @@ type InvoiceItem = {
   sales_lot_no: string;
   batch_expiration_date: string;
   piece_price: number;
+  free_txt?: string | null;
 };
 
 type CreditType = "case" | "piece";

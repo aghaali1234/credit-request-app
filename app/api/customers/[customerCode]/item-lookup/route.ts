@@ -7,6 +7,7 @@ import { getSupabaseAdmin } from "@/lib/supabase-admin";
 type CreditRowItem = {
   item_no: string | null;
   item_descp: string | null;
+  free_txt: string | null;
 };
 
 export async function GET(request: Request, context: RouteContext<"/api/customers/[customerCode]/item-lookup">) {
@@ -31,7 +32,7 @@ export async function GET(request: Request, context: RouteContext<"/api/customer
   const supabaseAdmin = getSupabaseAdmin();
   let baseQuery = supabaseAdmin
     .from("credit_rows")
-    .select("item_no,item_descp")
+    .select("item_no,item_descp,free_txt")
     .eq("customer_code", customerCode);
   if (!isAdmin) {
     baseQuery = baseQuery.eq("salesperson", salespersonName);

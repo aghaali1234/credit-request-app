@@ -15,6 +15,7 @@ type CreditRowSearchResult = {
   sales_lot_no: string | null;
   batch_expiration_date: string | null;
   piece_price: number | string | null;
+  free_txt: string | null;
 };
 
 function toNumber(value: number | string | null): number | null {
@@ -58,7 +59,7 @@ export async function GET(
   let queryBuilder = supabaseAdmin
     .from("credit_rows")
     .select(
-      "invoice_no,invoice_date,item_no,item_descp,quantity,sales_amount,sales_batch_number,sales_lot_no,batch_expiration_date,piece_price",
+      "invoice_no,invoice_date,item_no,item_descp,quantity,sales_amount,sales_batch_number,sales_lot_no,batch_expiration_date,piece_price,free_txt",
     )
     .eq("customer_code", customerCode)
     .or(`invoice_no.ilike.%${query}%,item_no.ilike.%${query}%,item_descp.ilike.%${query}%`);
@@ -110,6 +111,7 @@ export async function GET(
         sales_lot_no: row.sales_lot_no,
         batch_expiration_date: row.batch_expiration_date,
         piece_price: piecePrice,
+        free_txt: row.free_txt,
       };
     })
     .filter((row): row is NonNullable<typeof row> => row !== null);

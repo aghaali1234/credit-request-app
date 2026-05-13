@@ -18,10 +18,12 @@ type PersistedPhotoRef = {
 
 type CustomerNameRow = {
   customer_name: string | null;
+  free_txt: string | null;
 };
 
 type CustomerBpEmailRow = {
   bp_email: string | null;
+  free_txt: string | null;
 };
 
 async function loadCustomerNameForDraft({
@@ -38,7 +40,7 @@ async function loadCustomerNameForDraft({
   const supabaseAdmin = getSupabaseAdmin();
   const { data, error } = await supabaseAdmin
     .from("credit_rows")
-    .select("customer_name")
+    .select("customer_name,free_txt")
     .eq("salesperson", salesperson)
     .eq("customer_code", customerCode)
     .not("customer_name", "is", null)
@@ -69,7 +71,7 @@ async function loadBpEmailsForDraft({
   const supabaseAdmin = getSupabaseAdmin();
   const { data, error } = await supabaseAdmin
     .from("credit_rows")
-    .select("bp_email")
+    .select("bp_email,free_txt")
     .eq("salesperson", salesperson)
     .in("customer_code", normalizedCustomerCodes)
     .not("bp_email", "is", null);

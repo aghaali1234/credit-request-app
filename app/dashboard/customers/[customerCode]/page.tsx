@@ -11,6 +11,7 @@ type CreditRowInvoice = {
   customer_name: string | null;
   invoice_no: string | null;
   invoice_date: string | null;
+  free_txt: string | null;
 };
 
 type CustomerInvoicesPageProps = {
@@ -36,13 +37,13 @@ export default async function CustomerInvoicesPage({ params, searchParams }: Cus
   let from = 0;
   let hasMore = true;
   let customerName: string | null = null;
-  const invoicesByNo = new Map<string, { invoice_no: string; invoice_date: string }>();
+  const invoicesByNo = new Map<string, { invoice_no: string; invoice_date: string; free_txt: string | null }>();
 
   while (hasMore) {
     const to = from + pageSize - 1;
     let query = supabaseAdmin
       .from("credit_rows")
-      .select("customer_name,invoice_no,invoice_date")
+      .select("customer_name,invoice_no,invoice_date,free_txt")
       .eq("customer_code", customerCode)
       .order("invoice_no", { ascending: false }).order("invoice_date", { ascending: false })
       .range(from, to);
@@ -64,11 +65,18 @@ export default async function CustomerInvoicesPage({ params, searchParams }: Cus
         customerName = row.customer_name;
       }
 
-      if (row.invoice_no && row.invoice_date && !invoicesByNo.has(row.invoice_no)) {
-        invoicesByNo.set(row.invoice_no, {
-          invoice_no: row.invoice_no,
-          invoice_date: row.invoice_date,
-        });
+      if (row.invoice_no && row.invoice_date) {
+        const existingInvoice = invoicesByNo.get(row.invoice_no);
+
+        if (!existingInvoice) {
+          invoicesByNo.set(row.invoice_no, {
+            invoice_no: row.invoice_no,
+            invoice_date: row.invoice_date,
+            free_txt: row.free_txt,
+          });
+        } else if (!existingInvoice.free_txt && row.free_txt) {
+          existingInvoice.free_txt = row.free_txt;
+        }
       }
 
     }
