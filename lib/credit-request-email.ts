@@ -27,17 +27,24 @@ const CREDIT_REQUEST_RECIPIENT = "credit@turkanafood.com";
 const CREDIT_REQUEST_CC_RECIPIENT = "yerdogan@turkanafood.com";
 
 function normalizeEmailRecipients(recipients: string[]) {
-  const uniqueRecipients = new Set<string>();
+  const uniqueRecipients = new Map<string, string>();
 
   for (const recipient of recipients) {
-    const normalizedRecipient = recipient.trim();
+    const normalizedRecipients = recipient
+      .split(/[;,]/)
+      .map((email) => email.trim())
+      .filter(Boolean);
 
-    if (normalizedRecipient.length > 0) {
-      uniqueRecipients.add(normalizedRecipient);
+    for (const normalizedRecipient of normalizedRecipients) {
+      const dedupeKey = normalizedRecipient.toLowerCase();
+
+      if (!uniqueRecipients.has(dedupeKey)) {
+        uniqueRecipients.set(dedupeKey, normalizedRecipient);
+      }
     }
   }
 
-  return [...uniqueRecipients];
+  return [...uniqueRecipients.values()];
 }
 
 function money(value: number) {
@@ -205,9 +212,7 @@ export function buildCreditRequestMailtoUrl({
   text: string;
   ccRecipients?: string[];
 }) {
-  const ccList = normalizeEmailRecipients([CREDIT_REQUEST_CC_RECIPIENT, ...ccRecipients])
-    .map((recipient) => encodeMailtoValue(recipient))
-    .join(",");
+  const ccList = encodeMailtoValue(normalizeEmailRecipients([CREDIT_REQUEST_CC_RECIPIENT, ...ccRecipients]).join("; "));
   const buildUrl = (body: string) =>
     `mailto:${CREDIT_REQUEST_RECIPIENT}?cc=${ccList}&subject=${encodeMailtoValue(subject)}&body=${encodeMailtoValue(body)}`;
   return {
