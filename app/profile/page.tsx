@@ -10,7 +10,6 @@ type AnalyticsRow = {
   customer_code: string | null;
   customer_name: string | null;
   invoice_no: string | null;
-  invoice_date: string | null;
   invoice_year: number | string | null;
   invoice_month: number | string | null;
   item_no: string | null;
@@ -37,14 +36,6 @@ type DisplayTotal = {
 
 type MonthlyTotal = {
   month: string;
-  sales: number;
-  quantity: number;
-};
-
-type RecentInvoice = {
-  invoiceNo: string;
-  invoiceDate: string;
-  customerName: string;
   sales: number;
   quantity: number;
 };
@@ -101,20 +92,6 @@ function formatCompactCurrency(value: number) {
 
 function formatNumber(value: number) {
   return new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(value);
-}
-
-function formatDate(value: string) {
-  const date = new Date(`${value}T00:00:00`);
-
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(date);
 }
 
 function getMonthIndex(invoiceMonth: number | string | null) {
@@ -298,7 +275,7 @@ export default async function ProfilePage() {
     const { data, error } = await supabaseAdmin
       .from("credit_rows_analytics")
       .select(
-        "salesperson,customer_code,customer_name,invoice_no,invoice_date,invoice_year,invoice_month,item_no,item_descp,quantity,sales_amount_num",
+        "salesperson,customer_code,customer_name,invoice_no,invoice_year,invoice_month,item_no,item_descp,quantity,sales_amount_num",
       )
       .ilike("salesperson", salespersonName)
       .eq("invoice_year", PROFILE_YEAR)
@@ -320,7 +297,6 @@ export default async function ProfilePage() {
   const monthlyTotals: MonthlyTotal[] = MONTHS.map((month) => ({ month, sales: 0, quantity: 0 }));
   const customerTotals = new Map<string, NamedTotal>();
   const productTotals = new Map<string, NamedTotal>();
-  const invoiceTotals = new Map<string, RecentInvoice>();
   const activeCustomers = new Set<string>();
   const uniqueInvoices = new Set<string>();
   let totalSales = 0;
@@ -349,30 +325,10 @@ export default async function ProfilePage() {
 
     upsertNamedTotal(customerTotals, row.customer_code, row.customer_name, sales, quantity, row.invoice_no);
     upsertNamedTotal(productTotals, row.item_no, row.item_descp, sales, quantity, row.invoice_no);
-
-    if (row.invoice_no && row.invoice_date) {
-      const existingInvoice = invoiceTotals.get(row.invoice_no) ?? {
-        invoiceNo: row.invoice_no,
-        invoiceDate: row.invoice_date,
-        customerName: row.customer_name ?? row.customer_code ?? "-",
-        sales: 0,
-        quantity: 0,
-      };
-
-      existingInvoice.sales += sales;
-      existingInvoice.quantity += quantity;
-      invoiceTotals.set(row.invoice_no, existingInvoice);
-    }
   }
 
   const topCustomers = toDisplayTotals(customerTotals);
   const topProducts = toDisplayTotals(productTotals);
-  const recentInvoices = Array.from(invoiceTotals.values())
-    .sort((left, right) => {
-      const dateCompare = right.invoiceDate.localeCompare(left.invoiceDate);
-      return dateCompare === 0 ? right.invoiceNo.localeCompare(left.invoiceNo, undefined, { numeric: true }) : dateCompare;
-    })
-    .slice(0, 10);
   const topProduct = topProducts[0]?.name ?? "-";
   const topCustomer = topCustomers[0]?.name ?? "-";
 
@@ -458,20 +414,6 @@ export default async function ProfilePage() {
                 formatCurrency(product.sales),
                 formatNumber(product.quantity),
                 formatNumber(product.invoices),
-              ])}
-            />
-          </div>
-
-          <div className="space-y-3 xl:col-span-2">
-            <h2 className="text-xl font-semibold">Recent Sales / Recent Invoices</h2>
-            <DataTable
-              headers={["Invoice", "Date", "Customer", "Sales", "Quantity"]}
-              rows={recentInvoices.map((invoice) => [
-                invoice.invoiceNo,
-                formatDate(invoice.invoiceDate),
-                invoice.customerName,
-                formatCurrency(invoice.sales),
-                formatNumber(invoice.quantity),
               ])}
             />
           </div>
