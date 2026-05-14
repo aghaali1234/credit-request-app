@@ -33,13 +33,13 @@ function ProfileLinkStatus() {
   return (
     <span
       aria-live="polite"
-      className={`ml-2 inline-flex w-20 items-center justify-center gap-1.5 text-xs transition-opacity ${pending ? "opacity-100" : "opacity-0"}`}
+      className={`absolute right-2 inline-flex h-3 w-3 items-center justify-center transition-opacity ${pending ? "opacity-100" : "opacity-0"}`}
     >
       <span
         aria-hidden="true"
         className="h-3 w-3 animate-spin rounded-full border-2 border-white/40 border-t-white dark:border-zinc-950/30 dark:border-t-zinc-950"
       />
-      <span>{pending ? "Loading..." : ""}</span>
+      <span className="sr-only">{pending ? "Loading profile" : ""}</span>
     </span>
   );
 }
@@ -154,17 +154,20 @@ export function DashboardCustomers({ initialCustomers }: DashboardCustomersProps
   }
 
   return (
-    <section className="mt-6 space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold">Customers</h2>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400">Browse invoices by customer.</p>
+    <section className="mt-6 space-y-5">
+      <div className="flex flex-col gap-4 rounded-2xl border border-zinc-200 bg-white/75 p-4 shadow-sm shadow-zinc-200/60 dark:border-zinc-800 dark:bg-zinc-950/70 dark:shadow-black/20 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <h2 className="text-lg font-semibold tracking-tight">Customers</h2>
+          <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Browse invoices by customer.</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div
+          className="grid w-full grid-cols-3 gap-1 rounded-xl border border-zinc-200 bg-zinc-50/90 p-1 dark:border-zinc-800 dark:bg-zinc-900/70 sm:w-auto sm:min-w-[360px]"
+          aria-label="Dashboard actions"
+        >
           <Link
             href="/profile"
             prefetch={false}
-            className="inline-flex min-w-36 items-center justify-center rounded-md border border-sky-700 bg-sky-700 px-3 py-1.5 text-sm font-medium text-white transition hover:border-sky-800 hover:bg-sky-800 focus:outline-none focus:ring-2 focus:ring-sky-300 dark:border-sky-500 dark:bg-sky-500 dark:text-zinc-950 dark:hover:border-sky-400 dark:hover:bg-sky-400"
+            className="relative inline-flex h-10 items-center justify-center rounded-lg bg-zinc-950 px-3 text-sm font-medium text-white transition hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-sky-300 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200"
           >
             <span>Profile</span>
             <ProfileLinkStatus />
@@ -172,16 +175,16 @@ export function DashboardCustomers({ initialCustomers }: DashboardCustomersProps
           <button
             type="button"
             onClick={() => setIsTutorialOpen(true)}
-            className="rounded-md border border-sky-500 bg-transparent px-3 py-1.5 text-sm font-medium text-sky-700 transition hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-300 dark:border-sky-400/70 dark:text-sky-200 dark:hover:bg-sky-950/50"
+            className="inline-flex h-10 items-center justify-center rounded-lg px-3 text-sm font-medium text-zinc-700 transition hover:bg-white hover:text-zinc-950 focus:outline-none focus:ring-2 focus:ring-sky-300 dark:text-zinc-200 dark:hover:bg-zinc-800 dark:hover:text-white"
           >
             Tutorial
           </button>
           <button
             type="button"
             onClick={() => signOut({ callbackUrl: "/" })}
-            className="rounded-md border border-zinc-300 bg-transparent px-3 py-1.5 text-sm text-zinc-700 transition hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-200 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-900 dark:focus:ring-zinc-700/60"
+            className="inline-flex h-10 items-center justify-center rounded-lg px-3 text-sm font-medium text-zinc-500 transition hover:bg-white hover:text-zinc-950 focus:outline-none focus:ring-2 focus:ring-zinc-200 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white dark:focus:ring-zinc-700/60"
           >
-            Sign out
+            Sign Out
           </button>
         </div>
       </div>
