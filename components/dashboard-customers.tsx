@@ -1,6 +1,6 @@
 "use client";
 
-import Link, { useLinkStatus } from "next/link";
+import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { signOut } from "next-auth/react";
 
@@ -25,23 +25,6 @@ function normalizeSearchValue(value: string) {
 
 function tokenizeSearchValue(value: string) {
   return normalizeSearchValue(value).split(" ").filter(Boolean);
-}
-
-function ProfileLinkStatus() {
-  const { pending } = useLinkStatus();
-
-  return (
-    <span
-      aria-live="polite"
-      className={`absolute right-2 inline-flex h-3 w-3 items-center justify-center transition-opacity ${pending ? "opacity-100" : "opacity-0"}`}
-    >
-      <span
-        aria-hidden="true"
-        className="h-3 w-3 animate-spin rounded-full border-2 border-white/40 border-t-white dark:border-zinc-950/30 dark:border-t-zinc-950"
-      />
-      <span className="sr-only">{pending ? "Loading profile" : ""}</span>
-    </span>
-  );
 }
 
 export function DashboardCustomers({ initialCustomers }: DashboardCustomersProps) {
@@ -161,28 +144,20 @@ export function DashboardCustomers({ initialCustomers }: DashboardCustomersProps
           <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Browse invoices by customer.</p>
         </div>
         <div
-          className="grid w-full grid-cols-3 gap-1 rounded-xl border border-zinc-200 bg-zinc-50/90 p-1 dark:border-zinc-800 dark:bg-zinc-900/70 sm:w-auto sm:min-w-[360px]"
+          className="grid w-full grid-cols-2 gap-1 rounded-xl border border-zinc-200 bg-zinc-50/90 p-1 dark:border-zinc-800 dark:bg-zinc-900/70 sm:w-auto sm:min-w-60"
           aria-label="Dashboard actions"
         >
-          <Link
-            href="/profile"
-            prefetch={false}
-            className="relative inline-flex h-10 items-center justify-center rounded-lg bg-zinc-950 px-3 text-sm font-medium text-white transition hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-sky-300 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200"
-          >
-            <span>Profile</span>
-            <ProfileLinkStatus />
-          </Link>
           <button
             type="button"
             onClick={() => setIsTutorialOpen(true)}
-            className="inline-flex h-10 items-center justify-center rounded-lg px-3 text-sm font-medium text-zinc-700 transition hover:bg-white hover:text-zinc-950 focus:outline-none focus:ring-2 focus:ring-sky-300 dark:text-zinc-200 dark:hover:bg-zinc-800 dark:hover:text-white"
+            className="inline-flex h-10 items-center justify-center rounded-lg bg-zinc-950 px-4 text-sm font-medium text-white transition hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-sky-300 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200"
           >
             Tutorial
           </button>
           <button
             type="button"
             onClick={() => signOut({ callbackUrl: "/" })}
-            className="inline-flex h-10 items-center justify-center rounded-lg px-3 text-sm font-medium text-zinc-500 transition hover:bg-white hover:text-zinc-950 focus:outline-none focus:ring-2 focus:ring-zinc-200 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white dark:focus:ring-zinc-700/60"
+            className="inline-flex h-10 items-center justify-center rounded-lg px-4 text-sm font-medium text-zinc-500 transition hover:bg-white hover:text-zinc-950 focus:outline-none focus:ring-2 focus:ring-zinc-200 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white dark:focus:ring-zinc-700/60"
           >
             Sign Out
           </button>
