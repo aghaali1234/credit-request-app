@@ -1,7 +1,6 @@
 "use client";
 
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import Link, { useLinkStatus } from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { signOut } from "next-auth/react";
 
@@ -28,8 +27,24 @@ function tokenizeSearchValue(value: string) {
   return normalizeSearchValue(value).split(" ").filter(Boolean);
 }
 
+function ProfileLinkStatus() {
+  const { pending } = useLinkStatus();
+
+  return (
+    <span
+      aria-live="polite"
+      className={`ml-2 inline-flex w-20 items-center justify-center gap-1.5 text-xs transition-opacity ${pending ? "opacity-100" : "opacity-0"}`}
+    >
+      <span
+        aria-hidden="true"
+        className="h-3 w-3 animate-spin rounded-full border-2 border-white/40 border-t-white dark:border-zinc-950/30 dark:border-t-zinc-950"
+      />
+      <span>{pending ? "Loading..." : ""}</span>
+    </span>
+  );
+}
+
 export function DashboardCustomers({ initialCustomers }: DashboardCustomersProps) {
-  const router = useRouter();
   const [customers] = useState<Customer[]>(initialCustomers);
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -148,17 +163,12 @@ export function DashboardCustomers({ initialCustomers }: DashboardCustomersProps
         <div className="flex items-center gap-2">
           <Link
             href="/profile"
-            className="rounded-md border border-sky-700 bg-sky-700 px-3 py-1.5 text-sm font-medium text-white transition hover:border-sky-800 hover:bg-sky-800 focus:outline-none focus:ring-2 focus:ring-sky-300 dark:border-sky-500 dark:bg-sky-500 dark:text-zinc-950 dark:hover:border-sky-400 dark:hover:bg-sky-400"
+            prefetch={false}
+            className="inline-flex min-w-36 items-center justify-center rounded-md border border-sky-700 bg-sky-700 px-3 py-1.5 text-sm font-medium text-white transition hover:border-sky-800 hover:bg-sky-800 focus:outline-none focus:ring-2 focus:ring-sky-300 dark:border-sky-500 dark:bg-sky-500 dark:text-zinc-950 dark:hover:border-sky-400 dark:hover:bg-sky-400"
           >
-            Profile
+            <span>Profile</span>
+            <ProfileLinkStatus />
           </Link>
-          <button
-            type="button"
-            onClick={() => router.push("/profile")}
-            className="rounded-md border border-sky-700 bg-sky-700 px-3 py-1.5 text-sm font-medium text-white transition hover:border-sky-800 hover:bg-sky-800 focus:outline-none focus:ring-2 focus:ring-sky-300 dark:border-sky-500 dark:bg-sky-500 dark:text-zinc-950 dark:hover:border-sky-400 dark:hover:bg-sky-400"
-          >
-            Profile
-          </button>
           <button
             type="button"
             onClick={() => setIsTutorialOpen(true)}
