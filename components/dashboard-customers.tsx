@@ -144,17 +144,23 @@ export function DashboardCustomers({ initialCustomers }: DashboardCustomersProps
           <p className="text-xs text-zinc-500 dark:text-zinc-400">Browse invoices by customer.</p>
         </div>
         <div className="flex items-center gap-2">
+          <Link
+            href="/profile"
+            className="rounded-md border border-sky-700 bg-sky-700 px-3 py-1.5 text-sm font-medium text-white transition hover:border-sky-800 hover:bg-sky-800 focus:outline-none focus:ring-2 focus:ring-sky-300 dark:border-sky-500 dark:bg-sky-500 dark:text-zinc-950 dark:hover:border-sky-400 dark:hover:bg-sky-400"
+          >
+            Profile
+          </Link>
           <button
             type="button"
             onClick={() => setIsTutorialOpen(true)}
-            className="rounded-md border border-sky-500 bg-sky-50 px-3 py-1.5 text-sm font-medium text-sky-700 transition hover:bg-sky-100 focus:outline-none focus:ring-2 focus:ring-sky-300 dark:border-sky-400/70 dark:bg-sky-950/40 dark:text-sky-200 dark:hover:bg-sky-900/60"
+            className="rounded-md border border-sky-500 bg-transparent px-3 py-1.5 text-sm font-medium text-sky-700 transition hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-300 dark:border-sky-400/70 dark:text-sky-200 dark:hover:bg-sky-950/50"
           >
             Tutorial
           </button>
           <button
             type="button"
             onClick={() => signOut({ callbackUrl: "/" })}
-            className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm transition hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-200 dark:border-zinc-700 dark:hover:bg-zinc-900 dark:focus:ring-zinc-700/60"
+            className="rounded-md border border-zinc-300 bg-transparent px-3 py-1.5 text-sm text-zinc-700 transition hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-200 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-900 dark:focus:ring-zinc-700/60"
           >
             Sign out
           </button>
