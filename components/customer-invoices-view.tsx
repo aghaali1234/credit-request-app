@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { MODAL_NAVIGATION_CLEANUP_EVENT } from "@/components/navigation-modal-cleanup";
@@ -62,6 +63,7 @@ type CustomerInvoicesViewProps = {
 };
 
 export function CustomerInvoicesView({ customerCode, invoices, initialTab = "invoices" }: CustomerInvoicesViewProps) {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<DocumentTab>(initialTab);
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResultItem[]>([]);
@@ -153,6 +155,7 @@ export function CustomerInvoicesView({ customerCode, invoices, initialTab = "inv
     setActiveTab(nextTab);
     setSelectedResult(null);
     runSearch(searchTerm, nextTab);
+    router.replace(`/dashboard/customers/${encodeURIComponent(customerCode)}${nextTab === "credits" ? "?tab=credits" : ""}`, { scroll: false });
   }
 
   const isSearchActive = searchTerm.trim().length >= 2;
