@@ -67,6 +67,37 @@ function toReasonRowKey(item: CartItem) {
   return `${item.customer_code}::${item.invoice_no}::${item.item_no}`;
 }
 
+function isCartPhoto(value: unknown): value is CartPhoto {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const photo = value as Partial<CartPhoto>;
+  return (
+    typeof photo.id === "string" &&
+    typeof photo.fileName === "string" &&
+    typeof photo.publicUrl === "string" &&
+    typeof photo.storagePath === "string"
+  );
+}
+
+function mergeCartPhotos(currentPhotos: CartPhoto[], incomingPhotos: CartPhoto[]) {
+  if (incomingPhotos.length === 0) {
+    return currentPhotos;
+  }
+
+  const nextPhotosById = new Map<string, CartPhoto>();
+  for (const photo of incomingPhotos) {
+    nextPhotosById.set(photo.id, photo);
+  }
+  for (const photo of currentPhotos) {
+    if (!nextPhotosById.has(photo.id)) {
+      nextPhotosById.set(photo.id, photo);
+    }
+  }
+
+  return Array.from(nextPhotosById.values());
+}
 
 export function GlobalCartWidget() {
   const [items, setItems] = useState<CartItem[]>([]);
@@ -298,8 +329,12 @@ export function GlobalCartWidget() {
       }
 
       if (payload.photos?.length) {
-        await loadPhotos();
+        setPictures((currentPictures) => mergeCartPhotos(currentPictures, payload.photos ?? []));
+        window.dispatchEvent(new CustomEvent("cart-photos-updated", { detail: { photos: payload.photos } }));
+        return;
       }
+
+      await loadPhotos();
     } catch {
       setPhotoError("Failed to upload photos.");
     } finally {
@@ -511,7 +546,18 @@ export function GlobalCartWidget() {
       void loadCart();
     }
 
-    function handlePhotosUpdated() {
+    function handlePhotosUpdated(event: Event) {
+      const photos = event instanceof CustomEvent && Array.isArray(event.detail?.photos)
+        ? event.detail.photos.filter(isCartPhoto)
+        : [];
+
+      if (photos.length > 0) {
+        setPictures((currentPictures) => mergeCartPhotos(currentPictures, photos));
+        setPhotoError(null);
+        setAuthorized(true);
+        return;
+      }
+
       void loadPhotos();
     }
 

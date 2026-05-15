@@ -71,6 +71,7 @@ export function ProductCreditRequestModal({ item, customerCode, invoiceNo, invoi
   const [isUploadingPicture, setIsUploadingPicture] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [pictureError, setPictureError] = useState<string | null>(null);
+  const [pictureSuccess, setPictureSuccess] = useState<string | null>(null);
   const { fileInputKey: pictureInputKey, fileInputRef: pictureInputRef, resetFileInput: resetPictureInput } = useFreshFileInput();
   const reasonDropdownRef = useRef<HTMLDivElement | null>(null);
 
@@ -79,6 +80,7 @@ export function ProductCreditRequestModal({ item, customerCode, invoiceNo, invoi
     setIsUploadingPicture(false);
     setSubmitError(null);
     setPictureError(null);
+    setPictureSuccess(null);
     setIsReasonDropdownOpen(false);
     setIsMobileReasonSheetOpen(false);
     resetPictureInput();
@@ -238,6 +240,7 @@ export function ProductCreditRequestModal({ item, customerCode, invoiceNo, invoi
     }
 
     setPictureError(null);
+    setPictureSuccess(null);
     pictureInputRef.current?.click();
   }
 
@@ -256,6 +259,7 @@ export function ProductCreditRequestModal({ item, customerCode, invoiceNo, invoi
 
     setIsUploadingPicture(true);
     setPictureError(null);
+    setPictureSuccess(null);
 
     try {
       const formData = new FormData();
@@ -268,14 +272,18 @@ export function ProductCreditRequestModal({ item, customerCode, invoiceNo, invoi
         body: formData,
       });
 
-      const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+      const payload = (await response.json().catch(() => null)) as { photos?: unknown[]; error?: string } | null;
 
       if (!response.ok) {
         setPictureError(payload?.error ?? "Failed to upload picture.");
         return;
       }
 
-      window.dispatchEvent(new Event("cart-photos-updated"));
+      const uploadedPhotoCount = payload?.photos?.length ?? files.length;
+      setPictureSuccess(
+        `${uploadedPhotoCount} photo${uploadedPhotoCount === 1 ? "" : "s"} added to Cart Photo Evidence. Manage photos from Cart.`,
+      );
+      window.dispatchEvent(new CustomEvent("cart-photos-updated", { detail: { photos: payload?.photos ?? [] } }));
     } catch {
       setPictureError("Failed to upload picture.");
     } finally {
@@ -556,12 +564,14 @@ export function ProductCreditRequestModal({ item, customerCode, invoiceNo, invoi
 
           {submitError ? <p className="mt-3 text-sm text-red-600">{submitError}</p> : null}
           {pictureError ? <p className="mt-3 text-sm text-red-600">{pictureError}</p> : null}
+          {pictureSuccess ? <p className="mt-3 text-sm text-emerald-600">{pictureSuccess}</p> : null}
 
           <input
             key={pictureInputKey}
             ref={pictureInputRef}
             type="file"
             accept="image/*"
+            multiple
             className="sr-only"
             onChange={(event) => void onPictureSelected(event)}
             disabled={isUploadingPicture || isSubmitting}
