@@ -153,12 +153,20 @@ export default async function InvoiceItemsPage({ params }: InvoiceItemsPageProps
           <p className="text-sm text-zinc-600 dark:text-zinc-300">{isCreditInvoice ? "Credit No" : "Invoice No"}: {invoiceNo}</p>
           <p className="text-sm text-zinc-600 dark:text-zinc-300">{isCreditInvoice ? "Credit Date" : "Invoice Date"}: {invoiceDate ?? "-"}</p>
         </div>
-        <Link
-          href={backHref}
-          className="rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-1.5 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800/60 dark:bg-zinc-900/40"
-        >
-          Back
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/dashboard"
+            className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900/40 dark:hover:bg-zinc-800/60"
+          >
+            Homepage
+          </Link>
+          <Link
+            href={backHref}
+            className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900/40 dark:hover:bg-zinc-800/60"
+          >
+            Back
+          </Link>
+        </div>
       </div>
 
       <section className="space-y-3">

@@ -104,12 +104,20 @@ export default async function CustomerInvoicesPage({ params, searchParams }: Cus
           <h1 className="text-2xl font-semibold">{customerName ?? customerCode}</h1>
           <p className="text-sm text-zinc-600 dark:text-zinc-300">Code: {customerCode}</p>
         </div>
-        <Link
-          href="/dashboard"
-          className="rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-1.5 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800/60 dark:bg-zinc-900/40"
-        >
-          Back
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/dashboard"
+            className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900/40 dark:hover:bg-zinc-800/60"
+          >
+            Homepage
+          </Link>
+          <Link
+            href="/dashboard"
+            className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900/40 dark:hover:bg-zinc-800/60"
+          >
+            Back
+          </Link>
+        </div>
       </div>
 
       <CustomerInvoicesView customerCode={customerCode} invoices={invoices} initialTab={initialTab} />
