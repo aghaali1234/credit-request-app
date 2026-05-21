@@ -222,19 +222,7 @@ export function DashboardCustomers({ initialCustomers }: DashboardCustomersProps
               ×
             </button>
 
-            <div className="border-b border-zinc-200/80 px-5 pb-5 pt-7 dark:border-zinc-800 sm:px-8 sm:pb-6 sm:pt-8">
-              <span className="inline-flex items-center rounded-full border border-sky-100 bg-sky-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-sky-700 dark:border-sky-900/70 dark:bg-sky-950/60 dark:text-sky-300">
-                Internal Guide
-              </span>
-              <h3 className="mt-3 text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
-                Policy Checklist
-              </h3>
-              <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
-                Quick checklist before submitting a credit request
-              </p>
-            </div>
-
-            <div className="space-y-4 px-5 py-5 text-sm sm:px-8 sm:py-6">
+            <div className="space-y-4 px-5 pb-5 pt-14 text-sm sm:px-8 sm:pb-6 sm:pt-16">
               {[
                 {
                   step: "1",
@@ -277,35 +265,9 @@ export function DashboardCustomers({ initialCustomers }: DashboardCustomersProps
                   </div>
                 </section>
               ))}
-
-              <div className="rounded-2xl border border-amber-200/80 bg-amber-50/70 p-4 dark:border-amber-900/60 dark:bg-amber-950/40">
-                <div className="flex items-start gap-3">
-                  <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/70 dark:text-amber-200">
-                    !
-                  </span>
-                  <div>
-                    <p className="font-semibold text-amber-900 dark:text-amber-100">Important</p>
-                    <ul className="mt-2 space-y-1.5 text-amber-900/90 dark:text-amber-100/90">
-                      <li className="flex items-start gap-2">
-                        <span className="mt-0.5 text-amber-400 dark:text-amber-500">•</span>
-                        <span>Issue must be reported to the salesperson</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="mt-0.5 text-amber-400 dark:text-amber-500">•</span>
-                        <span>Do not dispose of the product before review</span>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-
-              <p className="pt-1 text-sm text-zinc-600 dark:text-zinc-300">
-                If all items are confirmed, proceed with the credit request.
-              </p>
             </div>
 
-            <div className="flex flex-col-reverse gap-2 border-t border-zinc-200/80 px-5 py-4 dark:border-zinc-800 sm:flex-row sm:items-center sm:justify-between sm:px-8">
-              <div className="hidden text-xs text-zinc-500 sm:block">Review each step before submitting.</div>
+            <div className="flex flex-col-reverse gap-2 border-t border-zinc-200/80 px-5 py-4 dark:border-zinc-800 sm:flex-row sm:justify-end sm:px-8">
               <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
                 <button
                   type="button"
