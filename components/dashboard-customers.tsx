@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { signOut } from "next-auth/react";
 
 type Customer = {
@@ -29,8 +29,8 @@ function tokenizeSearchValue(value: string) {
 
 export function DashboardCustomers({ initialCustomers }: DashboardCustomersProps) {
   const [customers] = useState<Customer[]>(initialCustomers);
-  const [isTutorialOpen, setIsTutorialOpen] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const [showPolicyChecklist, setShowPolicyChecklist] = useState(false);
+  const [showFullPolicy, setShowFullPolicy] = useState(false);
 
   const uniqueCustomers = useMemo(() => {
     const seen = new Set<string>();
@@ -88,33 +88,18 @@ export function DashboardCustomers({ initialCustomers }: DashboardCustomersProps
   const isSearchActive = searchTerm.trim().length > 0;
 
   useEffect(() => {
-    if (!isTutorialOpen) {
-      return;
-    }
-
-    const video = videoRef.current;
-    if (!video) {
-      return;
-    }
-
-    video.currentTime = 0;
-    const playPromise = video.play();
-
-    if (playPromise !== undefined) {
-      playPromise.catch(() => {
-        // Some browsers may still block autoplay; controls remain available.
-      });
-    }
-  }, [isTutorialOpen]);
-
-  useEffect(() => {
-    if (!isTutorialOpen) {
+    if (!showPolicyChecklist && !showFullPolicy) {
       return;
     }
 
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
-        closeTutorial();
+        if (showFullPolicy) {
+          setShowFullPolicy(false);
+          return;
+        }
+
+        setShowPolicyChecklist(false);
       }
     }
 
@@ -123,17 +108,11 @@ export function DashboardCustomers({ initialCustomers }: DashboardCustomersProps
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isTutorialOpen]);
+  }, [showPolicyChecklist, showFullPolicy]);
 
-  function closeTutorial() {
-    const video = videoRef.current;
-
-    if (video) {
-      video.pause();
-      video.currentTime = 0;
-    }
-
-    setIsTutorialOpen(false);
+  function closeChecklist() {
+    setShowFullPolicy(false);
+    setShowPolicyChecklist(false);
   }
 
   return (
@@ -149,10 +128,10 @@ export function DashboardCustomers({ initialCustomers }: DashboardCustomersProps
         >
           <button
             type="button"
-            onClick={() => setIsTutorialOpen(true)}
+            onClick={() => setShowPolicyChecklist(true)}
             className="inline-flex h-10 items-center justify-center rounded-lg bg-zinc-950 px-4 text-sm font-medium text-white transition hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-sky-300 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200"
           >
-            Tutorial
+            Policy Checklist
           </button>
           <button
             type="button"
@@ -222,36 +201,117 @@ export function DashboardCustomers({ initialCustomers }: DashboardCustomersProps
         </p>
       ) : null}
 
-      {isTutorialOpen ? (
+      {showPolicyChecklist ? (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-3"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
           role="dialog"
           aria-modal="true"
-          aria-label="Tutorial video"
-          onClick={closeTutorial}
+          aria-label="Policy Checklist"
+          onClick={closeChecklist}
         >
           <div
-            className="relative w-full max-w-[390px] rounded-xl bg-white p-3 shadow-2xl dark:bg-zinc-950"
+            className="relative w-full max-w-xl rounded-2xl bg-white p-5 shadow-2xl dark:bg-zinc-950 sm:p-6"
             onClick={(event) => event.stopPropagation()}
           >
             <button
               type="button"
-              onClick={closeTutorial}
-              className="absolute -right-2 -top-2 rounded-full bg-white px-2.5 py-1 text-lg font-semibold leading-none text-zinc-700 shadow-md transition hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-sky-300 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
-              aria-label="Close tutorial video"
+              onClick={closeChecklist}
+              className="absolute right-3 top-3 rounded-md px-2 py-1 text-xl leading-none text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-800 focus:outline-none focus:ring-2 focus:ring-sky-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+              aria-label="Close policy checklist"
             >
               ×
             </button>
-            <video
-              ref={videoRef}
-              autoPlay
-              controls
-              playsInline
-              preload="auto"
-              className="aspect-[9/16] max-h-[82vh] w-full rounded-lg bg-black object-contain"
-            >
-              <source src="/api/tutorial-video" type="video/mp4" />
-            </video>
+
+            <h3 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">Policy Checklist</h3>
+            <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
+              Quick checklist before submitting a credit request
+            </p>
+
+            <div className="mt-5 space-y-4 text-sm text-zinc-700 dark:text-zinc-200">
+              <div>
+                <p className="font-semibold">Step 1 — Timing</p>
+                <ul className="mt-1 list-disc space-y-1 pl-5">
+                  <li>Delivery was within the last 5 business days</li>
+                  <li>Or the product went bad before the expiration date</li>
+                </ul>
+              </div>
+
+              <div>
+                <p className="font-semibold">Step 2 — Proof</p>
+                <ul className="mt-1 list-disc space-y-1 pl-5">
+                  <li>Provide clear photos</li>
+                  <li>LOT number must be visible</li>
+                </ul>
+              </div>
+
+              <div>
+                <p className="font-semibold">Step 3 — Product Condition</p>
+                <ul className="mt-1 list-disc space-y-1 pl-5">
+                  <li>Product is in the original box</li>
+                  <li>Box is not marked or written on</li>
+                </ul>
+              </div>
+
+              <div>
+                <p className="font-semibold">Important</p>
+                <ul className="mt-1 list-disc space-y-1 pl-5">
+                  <li>Issue must be reported to the salesperson</li>
+                  <li>Do not dispose of the product before review</li>
+                </ul>
+              </div>
+
+              <p className="font-medium">If all items are confirmed, proceed with the credit request.</p>
+            </div>
+
+            <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setShowFullPolicy(true)}
+                className="inline-flex h-10 items-center justify-center rounded-lg border border-zinc-300 px-4 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-300 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
+              >
+                View Full Policy
+              </button>
+              <button
+                type="button"
+                onClick={closeChecklist}
+                className="inline-flex h-10 items-center justify-center rounded-lg bg-zinc-950 px-4 text-sm font-medium text-white transition hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-sky-300 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200"
+              >
+                Got it
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {showPolicyChecklist && showFullPolicy ? (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-2 sm:p-6"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Full policy document"
+          onClick={() => setShowFullPolicy(false)}
+        >
+          <div
+            className="flex h-full w-full flex-col rounded-2xl bg-white shadow-2xl dark:bg-zinc-950 sm:h-[90vh] sm:w-[90vw] sm:max-w-6xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-zinc-200 px-3 py-2 dark:border-zinc-800 sm:px-4 sm:py-3">
+              <h4 className="text-sm font-semibold sm:text-base">Full Policy</h4>
+              <button
+                type="button"
+                onClick={() => setShowFullPolicy(false)}
+                className="rounded-md px-3 py-1 text-sm font-medium text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900 focus:outline-none focus:ring-2 focus:ring-sky-300 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+              >
+                Back
+              </button>
+            </div>
+            <div className="min-h-0 flex-1">
+              <iframe
+                title="Policy PDF"
+                src="/policy.pdf"
+                className="h-full w-full rounded-b-2xl"
+              />
+            </div>
           </div>
         </div>
       ) : null}
