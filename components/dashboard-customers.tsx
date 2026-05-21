@@ -188,8 +188,8 @@ export function DashboardCustomers({ initialCustomers }: DashboardCustomersProps
               href={`/dashboard/customers/${encodeURIComponent(customer.customer_code)}`}
               className="block px-3 py-2 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/60 dark:bg-zinc-900/40"
             >
-              <p className="font-medium">{customer.customer_code}</p>
-              <p className="text-zinc-600 dark:text-zinc-300">{customer.customer_name}</p>
+              <p className="font-bold">{customer.customer_code}</p>
+              <p className="font-normal text-zinc-600 dark:text-zinc-300">{customer.customer_name}</p>
             </Link>
           </li>
         ))}
