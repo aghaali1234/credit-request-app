@@ -203,81 +203,87 @@ export function DashboardCustomers({ initialCustomers }: DashboardCustomersProps
 
       {showPolicyChecklist ? (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/45 p-3 backdrop-blur-[2px] sm:p-5"
           role="dialog"
           aria-modal="true"
           aria-label="Policy Checklist"
           onClick={closeChecklist}
         >
           <div
-            className="relative w-full max-w-xl rounded-2xl bg-white p-5 shadow-2xl dark:bg-zinc-950 sm:p-6"
+            className="relative w-full max-w-[740px] overflow-hidden rounded-[22px] border border-zinc-200/80 bg-white shadow-[0_20px_55px_-22px_rgba(0,0,0,0.4)] dark:border-zinc-800 dark:bg-zinc-950"
             onClick={(event) => event.stopPropagation()}
           >
             <button
               type="button"
               onClick={closeChecklist}
-              className="absolute right-3 top-3 rounded-md px-2 py-1 text-xl leading-none text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-800 focus:outline-none focus:ring-2 focus:ring-sky-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+              className="absolute right-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-full border border-zinc-200 bg-white text-base font-medium leading-none text-zinc-500 transition hover:border-zinc-300 hover:text-zinc-900 focus:outline-none focus:ring-2 focus:ring-sky-300 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:text-zinc-100"
               aria-label="Close policy checklist"
             >
               ×
             </button>
 
-            <h3 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">Policy Checklist</h3>
-            <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
-              Quick checklist before submitting a credit request
-            </p>
-
-            <div className="mt-5 space-y-4 text-sm text-zinc-700 dark:text-zinc-200">
-              <div>
-                <p className="font-semibold">Step 1 — Timing</p>
-                <ul className="mt-1 list-disc space-y-1 pl-5">
-                  <li>Delivery was within the last 5 business days</li>
-                  <li>Or the product went bad before the expiration date</li>
-                </ul>
-              </div>
-
-              <div>
-                <p className="font-semibold">Step 2 — Proof</p>
-                <ul className="mt-1 list-disc space-y-1 pl-5">
-                  <li>Provide clear photos</li>
-                  <li>LOT number must be visible</li>
-                </ul>
-              </div>
-
-              <div>
-                <p className="font-semibold">Step 3 — Product Condition</p>
-                <ul className="mt-1 list-disc space-y-1 pl-5">
-                  <li>Product is in the original box</li>
-                  <li>Box is not marked or written on</li>
-                </ul>
-              </div>
-
-              <div>
-                <p className="font-semibold">Important</p>
-                <ul className="mt-1 list-disc space-y-1 pl-5">
-                  <li>Issue must be reported to the salesperson</li>
-                  <li>Do not dispose of the product before review</li>
-                </ul>
-              </div>
-
-              <p className="font-medium">If all items are confirmed, proceed with the credit request.</p>
+            <div className="space-y-4 px-5 pb-5 pt-14 text-sm sm:px-8 sm:pb-6 sm:pt-16">
+              {[
+                {
+                  step: "1",
+                  title: "Timing",
+                  items: [
+                    "Delivery was within the last 5 business days",
+                    "Or the product went bad before the expiration date",
+                  ],
+                },
+                {
+                  step: "2",
+                  title: "Proof",
+                  items: ["Provide clear photos", "LOT number must be visible"],
+                },
+                {
+                  step: "3",
+                  title: "Product Condition",
+                  items: ["Product is in the original box", "Box is not marked or written on"],
+                },
+              ].map((section) => (
+                <section
+                  key={section.step}
+                  className="rounded-2xl border border-zinc-200 bg-zinc-50/70 p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/60"
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-zinc-900 text-xs font-semibold text-white dark:bg-white dark:text-zinc-900">
+                      {section.step}
+                    </span>
+                    <div className="min-w-0">
+                      <h4 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{section.title}</h4>
+                      <ul className="mt-2 space-y-1.5 text-zinc-700 dark:text-zinc-200">
+                        {section.items.map((item) => (
+                          <li key={item} className="flex items-start gap-2">
+                            <span className="mt-0.5 text-zinc-400 dark:text-zinc-500">•</span>
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </section>
+              ))}
             </div>
 
-            <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-end">
-              <button
-                type="button"
-                onClick={() => setShowFullPolicy(true)}
-                className="inline-flex h-10 items-center justify-center rounded-lg border border-zinc-300 px-4 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-300 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
-              >
-                View Full Policy
-              </button>
-              <button
-                type="button"
-                onClick={closeChecklist}
-                className="inline-flex h-10 items-center justify-center rounded-lg bg-zinc-950 px-4 text-sm font-medium text-white transition hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-sky-300 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200"
-              >
-                Got it
-              </button>
+            <div className="flex flex-col-reverse gap-2 border-t border-zinc-200/80 px-5 py-4 dark:border-zinc-800 sm:flex-row sm:justify-end sm:px-8">
+              <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={() => setShowFullPolicy(true)}
+                  className="inline-flex h-10 items-center justify-center rounded-xl border border-zinc-300 bg-white px-4 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-300 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                >
+                  View Full Policy
+                </button>
+                <button
+                  type="button"
+                  onClick={closeChecklist}
+                  className="inline-flex h-10 items-center justify-center rounded-xl bg-zinc-950 px-4 text-sm font-medium text-white transition hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-sky-300 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200"
+                >
+                  Got it
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -285,22 +291,22 @@ export function DashboardCustomers({ initialCustomers }: DashboardCustomersProps
 
       {showPolicyChecklist && showFullPolicy ? (
         <div
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-2 sm:p-6"
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-zinc-950/60 p-2 backdrop-blur-[2px] sm:p-6"
           role="dialog"
           aria-modal="true"
           aria-label="Full policy document"
           onClick={() => setShowFullPolicy(false)}
         >
           <div
-            className="flex h-full w-full flex-col rounded-2xl bg-white shadow-2xl dark:bg-zinc-950 sm:h-[90vh] sm:w-[90vw] sm:max-w-6xl"
+            className="flex h-full w-full flex-col overflow-hidden rounded-[22px] border border-zinc-200 bg-white shadow-[0_20px_55px_-22px_rgba(0,0,0,0.4)] dark:border-zinc-800 dark:bg-zinc-950 sm:h-[90vh] sm:w-[90vw] sm:max-w-6xl"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-zinc-200 px-3 py-2 dark:border-zinc-800 sm:px-4 sm:py-3">
-              <h4 className="text-sm font-semibold sm:text-base">Full Policy</h4>
+            <div className="flex items-center justify-between border-b border-zinc-200 px-3 py-2 dark:border-zinc-800 sm:px-5 sm:py-3">
+              <h4 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 sm:text-base">Full Policy</h4>
               <button
                 type="button"
                 onClick={() => setShowFullPolicy(false)}
-                className="rounded-md px-3 py-1 text-sm font-medium text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900 focus:outline-none focus:ring-2 focus:ring-sky-300 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+                className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900 focus:outline-none focus:ring-2 focus:ring-sky-300 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
               >
                 Back
               </button>
