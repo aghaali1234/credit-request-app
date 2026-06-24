@@ -3,8 +3,12 @@
 import { FormEvent, useState } from "react";
 import { signIn } from "next-auth/react";
 
-export function LoginForm() {
-  const [error, setError] = useState<string | null>(null);
+type LoginFormProps = {
+  initialError?: string | null;
+};
+
+export function LoginForm({ initialError = null }: LoginFormProps) {
+  const [error, setError] = useState<string | null>(initialError);
   const [isPending, setIsPending] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -19,18 +23,14 @@ export function LoginForm() {
     const response = await signIn("credentials", {
       username,
       password,
-      redirect: false,
       callbackUrl: "/dashboard",
+      redirect: true,
     });
-
-    setIsPending(false);
 
     if (response?.error) {
       setError("Invalid username or password.");
-      return;
+      setIsPending(false);
     }
-
-    window.location.href = "/dashboard";
   }
 
   return (

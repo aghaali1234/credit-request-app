@@ -6,12 +6,23 @@ import creditAppLogo from "@/components/creditapp.png";
 import { LoginForm } from "@/components/login-form";
 import { authOptions } from "@/lib/auth";
 
-export default async function Home() {
+type HomeProps = {
+  searchParams: Promise<{ error?: string | string[] }>;
+};
+
+function normalizeSearchParam(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+export default async function Home({ searchParams }: HomeProps) {
   const session = await getServerSession(authOptions);
 
   if (session?.user) {
     redirect("/dashboard");
   }
+
+  const { error } = await searchParams;
+  const initialError = normalizeSearchParam(error) ? "Invalid username or password." : null;
 
   return (
     <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-br from-zinc-100 via-white to-zinc-100 px-4 py-8 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950">
@@ -26,7 +37,7 @@ export default async function Home() {
             className="mb-2 h-28 w-auto"
           />
         </div>
-        <LoginForm />
+        <LoginForm initialError={initialError} />
       </section>
     </main>
   );
