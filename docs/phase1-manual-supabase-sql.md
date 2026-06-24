@@ -36,3 +36,31 @@ Optional performance index (only if not already present):
 create index if not exists idx_credit_rows_salesperson_customer
   on public.credit_rows (salesperson, customer_code, customer_name);
 ```
+
+Admin password reset support (required for the dashboard User Settings panel):
+
+```sql
+create or replace function public.update_app_user_password(
+  p_salesperson_name text,
+  p_new_password text
+)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  updated_count integer;
+begin
+  update public.app_users
+  set password_hash = crypt(p_new_password, gen_salt('bf'))
+  where salesperson_name = p_salesperson_name;
+
+  get diagnostics updated_count = row_count;
+  return updated_count > 0;
+end;
+$$;
+
+revoke all on function public.update_app_user_password(text, text) from public;
+grant execute on function public.update_app_user_password(text, text) to service_role;
+```
