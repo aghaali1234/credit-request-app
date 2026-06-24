@@ -13,6 +13,8 @@ type PasswordUpdateBody = {
   password?: unknown;
 };
 
+const CREDIT_ROWS_PAGE_SIZE = 1000;
+
 async function assertAdminSession() {
   const session = await getServerSession(authOptions);
 
@@ -35,28 +37,47 @@ export async function GET() {
   }
 
   const supabaseAdmin = getSupabaseAdmin();
-  const { data, error } = await supabaseAdmin
-    .from("credit_rows")
-    .select("salesperson")
-    .not("salesperson", "is", null)
-    .order("salesperson", { ascending: true })
-    .limit(20000);
+  const salespersonNames = new Set<string>();
+  let page = 0;
 
-  if (error) {
-    console.error("Failed to fetch user settings salespeople", error);
-    return Response.json(
-      { error: "Failed to fetch salespeople" },
-      { status: 500 },
-    );
+  while (true) {
+    const from = page * CREDIT_ROWS_PAGE_SIZE;
+    const to = from + CREDIT_ROWS_PAGE_SIZE - 1;
+    const { data, error } = await supabaseAdmin
+      .from("credit_rows")
+      .select("salesperson")
+      .not("salesperson", "is", null)
+      .order("salesperson", { ascending: true })
+      .range(from, to);
+
+    if (error) {
+      console.error("Failed to fetch user settings salespeople", error);
+      return Response.json(
+        { error: "Failed to fetch salespeople" },
+        { status: 500 },
+      );
+    }
+
+    const rows = (data as CreditRowsSalesperson[]) ?? [];
+
+    rows.forEach((row) => {
+      const salesperson = row.salesperson?.trim();
+
+      if (salesperson) {
+        salespersonNames.add(salesperson);
+      }
+    });
+
+    if (rows.length < CREDIT_ROWS_PAGE_SIZE) {
+      break;
+    }
+
+    page += 1;
   }
 
-  const salespeople = Array.from(
-    new Set(
-      ((data as CreditRowsSalesperson[]) ?? [])
-        .map((row) => row.salesperson?.trim())
-        .filter((salesperson): salesperson is string => Boolean(salesperson)),
-    ),
-  ).sort((first, second) => first.localeCompare(second));
+  const salespeople = Array.from(salespersonNames).sort((first, second) =>
+    first.localeCompare(second),
+  );
 
   return Response.json({ salespeople });
 }
