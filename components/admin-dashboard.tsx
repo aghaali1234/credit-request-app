@@ -23,6 +23,10 @@ type PasswordUpdateResponse = {
   error?: string;
 };
 
+type DuplicateRemoveResponse = {
+  deletedRows?: number;
+  error?: string;
+};
 
 export function AdminDashboard() {
   const [selectedFile, setSelectedFile] = useState<File>();
@@ -31,6 +35,9 @@ export function AdminDashboard() {
     "Waiting for CSV file",
   );
   const [uploadErrorMessage, setUploadErrorMessage] = useState<string>();
+  const [isRemovingDuplicates, setIsRemovingDuplicates] = useState(false);
+  const [duplicateRemoveMessage, setDuplicateRemoveMessage] = useState<string>();
+  const [duplicateRemoveError, setDuplicateRemoveError] = useState<string>();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [salespeople, setSalespeople] = useState<string[]>([]);
   const [selectedSalesperson, setSelectedSalesperson] = useState<string>();
@@ -129,6 +136,34 @@ export function AdminDashboard() {
     }
   }
 
+  async function removeDuplicates() {
+    if (isRemovingDuplicates) {
+      return;
+    }
+
+    setIsRemovingDuplicates(true);
+    setDuplicateRemoveMessage(undefined);
+    setDuplicateRemoveError(undefined);
+
+    const response = await fetch("/api/admin/credit-rows-duplicates", {
+      method: "POST",
+    });
+    const payload = (await response.json()) as DuplicateRemoveResponse;
+
+    if (!response.ok) {
+      setDuplicateRemoveError(
+        payload.error ?? "Duplicate remove operation failed.",
+      );
+      setIsRemovingDuplicates(false);
+      return;
+    }
+
+    setDuplicateRemoveMessage(
+      `Duplicate remove completed: ${(payload.deletedRows ?? 0).toLocaleString()} rows deleted.`,
+    );
+    setIsRemovingDuplicates(false);
+  }
+
   async function uploadCsv() {
     if (!selectedFile || isUploading) {
       return;
@@ -220,6 +255,33 @@ export function AdminDashboard() {
                 {uploadErrorMessage}
               </p>
             ) : null}
+
+            <div className="mt-4 border-t border-slate-200 pt-4 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={removeDuplicates}
+                disabled={isRemovingDuplicates}
+                className="w-full rounded-2xl bg-amber-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-amber-600/20 transition hover:bg-amber-500 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none dark:disabled:bg-slate-800"
+              >
+                {isRemovingDuplicates
+                  ? "Removing duplicates..."
+                  : "Duplicate Remove"}
+              </button>
+              <p className="mt-3 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                Deletes duplicate credit rows that match by customer code,
+                invoice no, item no, quantity, and piece price.
+              </p>
+              {duplicateRemoveMessage ? (
+                <p className="mt-3 text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                  {duplicateRemoveMessage}
+                </p>
+              ) : null}
+              {duplicateRemoveError ? (
+                <p className="mt-3 text-sm text-red-600 dark:text-red-400">
+                  {duplicateRemoveError}
+                </p>
+              ) : null}
+            </div>
           </div>
         </div>
 
