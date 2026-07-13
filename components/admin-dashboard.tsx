@@ -26,6 +26,12 @@ type PasswordUpdateResponse = {
 type DuplicateRemoveResponse = {
   deletedRows?: number;
   error?: string;
+  supabase?: {
+    message?: string;
+    code?: string;
+    details?: string;
+    hint?: string;
+  };
 };
 
 export function AdminDashboard() {
@@ -132,6 +138,28 @@ export function AdminDashboard() {
     }
   }
 
+  function formatDuplicateRemoveError(payload: DuplicateRemoveResponse) {
+    const parts = [payload.error ?? "Duplicate remove operation failed."];
+
+    if (payload.supabase?.message) {
+      parts.push(`Message: ${payload.supabase.message}`);
+    }
+
+    if (payload.supabase?.code) {
+      parts.push(`Code: ${payload.supabase.code}`);
+    }
+
+    if (payload.supabase?.details) {
+      parts.push(`Details: ${payload.supabase.details}`);
+    }
+
+    if (payload.supabase?.hint) {
+      parts.push(`Hint: ${payload.supabase.hint}`);
+    }
+
+    return parts.join(" ");
+  }
+
   async function removeDuplicates() {
     if (isRemovingDuplicates) {
       return;
@@ -141,23 +169,31 @@ export function AdminDashboard() {
     setDuplicateRemoveMessage(undefined);
     setDuplicateRemoveError(undefined);
 
-    const response = await fetch("/api/admin/credit-rows-duplicates", {
-      method: "POST",
-    });
-    const payload = (await response.json()) as DuplicateRemoveResponse;
+    try {
+      const response = await fetch("/api/admin/credit-rows-duplicates", {
+        method: "POST",
+      });
+      const payload = (await response.json()) as DuplicateRemoveResponse;
 
-    if (!response.ok) {
-      setDuplicateRemoveError(
-        payload.error ?? "Duplicate remove operation failed.",
+      if (!response.ok) {
+        console.error("Duplicate remove failed", payload);
+        setDuplicateRemoveError(formatDuplicateRemoveError(payload));
+        return;
+      }
+
+      setDuplicateRemoveMessage(
+        `${(payload.deletedRows ?? 0).toLocaleString()} duplicate rows removed.`,
       );
+    } catch (error) {
+      console.error("Duplicate remove request failed", error);
+      setDuplicateRemoveError(
+        error instanceof Error
+          ? `Duplicate remove request failed. Message: ${error.message}`
+          : "Duplicate remove request failed.",
+      );
+    } finally {
       setIsRemovingDuplicates(false);
-      return;
     }
-
-    setDuplicateRemoveMessage(
-      `Duplicate remove completed: ${(payload.deletedRows ?? 0).toLocaleString()} rows deleted.`,
-    );
-    setIsRemovingDuplicates(false);
   }
 
   async function uploadCsv() {
