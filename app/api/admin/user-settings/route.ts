@@ -7,10 +7,6 @@ type AppUserRow = {
   salesperson_name: string | null;
 };
 
-type PasswordUpdateBody = {
-  salesperson?: unknown;
-  password?: unknown;
-};
 
 async function assertAdminSession() {
   const { response } = await getAdminSession();
@@ -60,52 +56,3 @@ export async function GET() {
   return Response.json({ users, salespeople: users.map((user) => user.salespersonName) });
 }
 
-export async function PATCH(request: Request) {
-  const adminError = await assertAdminSession();
-
-  if (adminError) {
-    return adminError;
-  }
-
-  const body = (await request.json()) as PasswordUpdateBody;
-  const salesperson =
-    typeof body.salesperson === "string" ? body.salesperson.trim() : "";
-  const password = typeof body.password === "string" ? body.password : "";
-
-  if (!salesperson) {
-    return Response.json({ error: "Missing salesperson" }, { status: 400 });
-  }
-
-  if (password.length < 6) {
-    return Response.json(
-      { error: "Password must be at least 6 characters." },
-      { status: 400 },
-    );
-  }
-
-  const supabaseAdmin = getSupabaseAdmin();
-  const { data, error } = await supabaseAdmin.rpc("update_app_user_password", {
-    p_salesperson_name: salesperson,
-    p_new_password: password,
-  });
-
-  if (error) {
-    console.error("update_app_user_password RPC failed", error);
-    return Response.json(
-      {
-        error:
-          "Failed to update password. Please make sure the update_app_user_password Supabase function exists.",
-      },
-      { status: 500 },
-    );
-  }
-
-  if (!data) {
-    return Response.json(
-      { error: "No app user found for this salesperson." },
-      { status: 404 },
-    );
-  }
-
-  return Response.json({ ok: true, salesperson });
-}
