@@ -19,10 +19,11 @@ security definer
 set search_path = public
 stable
 as $$
-  select u.id, u.username, u.salesperson_name
+  select u.user_id, u.username, u.salesperson_name
   from public.app_users u
   where u.username = p_username
     and u.password_hash = crypt(p_password, u.password_hash)
+    and u.is_active = true
   limit 1;
 $$;
 

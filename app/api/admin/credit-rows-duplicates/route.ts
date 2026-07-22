@@ -1,7 +1,4 @@
-import { getServerSession } from "next-auth";
-
-import { authOptions } from "@/lib/auth";
-import { isAdminUser } from "@/lib/is-admin-user";
+import { getAdminSession } from "@/lib/admin-auth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
 type RemoveDuplicatesRpcResponse = number | { deleted_count?: number } | null;
@@ -37,7 +34,8 @@ function serializeSupabaseError(error: unknown): SupabaseErrorDetails {
 }
 
 function getSupabaseProjectHost() {
-  const supabaseUrl = process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseUrl =
+    process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL;
 
   if (!supabaseUrl) {
     return undefined;
@@ -51,19 +49,17 @@ function getSupabaseProjectHost() {
 }
 
 export async function POST() {
-  const session = await getServerSession(authOptions);
+  const { response } = await getAdminSession();
 
-  if (!session?.user?.salespersonName) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  if (!isAdminUser(session.user.name)) {
-    return Response.json({ error: "Forbidden" }, { status: 403 });
+  if (response) {
+    return response;
   }
 
   try {
     const supabaseAdmin = getSupabaseAdmin();
-    const { data, error } = await supabaseAdmin.rpc("remove_duplicate_credit_rows");
+    const { data, error } = await supabaseAdmin.rpc(
+      "remove_duplicate_credit_rows",
+    );
 
     if (error) {
       const rpcError = serializeSupabaseError(error);
@@ -85,7 +81,8 @@ export async function POST() {
 
     return Response.json({ deletedRows: getDeletedCount(data) });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unexpected server error.";
+    const message =
+      error instanceof Error ? error.message : "Unexpected server error.";
 
     console.error("Failed to remove duplicate credit_rows", {
       message,
@@ -95,7 +92,8 @@ export async function POST() {
 
     return Response.json(
       {
-        error: "Duplicate remove failed before the Supabase RPC could complete.",
+        error:
+          "Duplicate remove failed before the Supabase RPC could complete.",
         supabase: { message },
       },
       { status: 500 },
