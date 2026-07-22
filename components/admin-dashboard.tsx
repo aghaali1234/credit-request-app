@@ -297,6 +297,11 @@ export function AdminDashboard() {
                 Loading users...
               </p>
             ) : null}
+            {userSettingsError ? (
+              <p className="rounded-2xl bg-red-50 p-4 text-sm text-red-600 dark:bg-red-950/30 dark:text-red-300">
+                {userSettingsError}
+              </p>
+            ) : null}
             {!isLoadingSalespeople && users.length === 0 ? (
               <p className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-500 dark:bg-slate-900 dark:text-slate-400">
                 No active salesperson user found in app_users.
