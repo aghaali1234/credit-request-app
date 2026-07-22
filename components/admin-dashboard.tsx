@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
+import { ChangeEvent, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 
 type UploadResponse = {
@@ -26,10 +26,6 @@ type UserSettingsResponse = {
   error?: string;
 };
 
-type PasswordUpdateResponse = {
-  ok?: boolean;
-  error?: string;
-};
 
 type DuplicateRemoveResponse = {
   deletedRows?: number;
@@ -53,12 +49,8 @@ export function AdminDashboard() {
   const [duplicateRemoveError, setDuplicateRemoveError] = useState<string>();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [users, setUsers] = useState<UserSettingsUser[]>([]);
-  const [selectedSalesperson, setSelectedSalesperson] = useState<string>();
   const [isLoadingSalespeople, setIsLoadingSalespeople] = useState(true);
   const [userSettingsError, setUserSettingsError] = useState<string>();
-  const [password, setPassword] = useState("");
-  const [isSavingPassword, setIsSavingPassword] = useState(false);
-  const [passwordSaveMessage, setPasswordSaveMessage] = useState<string>();
 
   useEffect(() => {
     let isMounted = true;
@@ -99,39 +91,6 @@ export function AdminDashboard() {
       isMounted = false;
     };
   }, []);
-
-  async function savePassword(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (!selectedSalesperson || isSavingPassword) {
-      return;
-    }
-
-    setIsSavingPassword(true);
-    setUserSettingsError(undefined);
-    setPasswordSaveMessage(undefined);
-
-    const response = await fetch("/api/admin/user-settings", {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ salesperson: selectedSalesperson, password }),
-    });
-    const payload = (await response.json()) as PasswordUpdateResponse;
-
-    if (!response.ok) {
-      setUserSettingsError(payload.error ?? "Password could not be updated.");
-      setIsSavingPassword(false);
-      return;
-    }
-
-    setPassword("");
-    setPasswordSaveMessage(
-      `${selectedSalesperson} password updated successfully.`,
-    );
-    setIsSavingPassword(false);
-  }
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -343,87 +302,15 @@ export function AdminDashboard() {
                 No active salesperson user found in app_users.
               </p>
             ) : null}
-            {users.map((user) => {
-              const salesperson = user.salespersonName;
-              const isSelected = selectedSalesperson === salesperson;
-              return (
-                <div key={user.id} className="space-y-3">
-                  <div
-                    className={`rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
-                      isSelected
-                        ? "border-blue-500 bg-blue-50 text-blue-700 dark:border-blue-400 dark:bg-blue-950/40 dark:text-blue-200"
-                        : "border-slate-200 text-slate-700 hover:border-blue-300 hover:bg-slate-50 dark:border-slate-800 dark:text-slate-200 dark:hover:border-blue-700 dark:hover:bg-slate-900"
-                    }`}
-                  >
-                    <Link
-                      href={`/admin/users/${encodeURIComponent(user.id)}/dashboard`}
-                      className="block text-left underline-offset-4 hover:underline"
-                    >
-                      <span className="block">{salesperson}</span>
-                    </Link>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedSalesperson(
-                          isSelected ? undefined : salesperson,
-                        );
-                        setPassword("");
-                        setPasswordSaveMessage(undefined);
-                        setUserSettingsError(undefined);
-                      }}
-                      className="mt-3 rounded-xl border border-slate-300 px-3 py-1.5 text-xs font-bold text-slate-600 transition hover:bg-white dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-950"
-                    >
-                      {isSelected
-                        ? "Close password settings"
-                        : "Change password"}
-                    </button>
-                  </div>
-
-                  {isSelected ? (
-                    <form
-                      onSubmit={savePassword}
-                      className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/70"
-                    >
-                      <label
-                        className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400"
-                        htmlFor="salesperson-password"
-                      >
-                        New password for {selectedSalesperson}
-                      </label>
-                      <input
-                        id="salesperson-password"
-                        type="password"
-                        minLength={6}
-                        value={password}
-                        onChange={(event) => setPassword(event.target.value)}
-                        disabled={isSavingPassword}
-                        className="mt-3 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 disabled:cursor-not-allowed disabled:bg-slate-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:disabled:bg-slate-800"
-                        placeholder="Enter at least 6 characters"
-                      />
-                      <button
-                        type="submit"
-                        disabled={password.length < 6 || isSavingPassword}
-                        className="mt-4 w-full rounded-2xl bg-slate-950 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-slate-950/10 transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none dark:bg-blue-700 dark:hover:bg-blue-600 dark:disabled:bg-slate-800"
-                      >
-                        {isSavingPassword
-                          ? "Saving password..."
-                          : "Save new password"}
-                      </button>
-                      {passwordSaveMessage ? (
-                        <p className="mt-3 text-sm font-medium text-emerald-600 dark:text-emerald-400">
-                          {passwordSaveMessage}
-                        </p>
-                      ) : null}
-                      {userSettingsError ? (
-                        <p className="mt-3 text-sm text-red-600 dark:text-red-400">
-                          {userSettingsError}
-                        </p>
-                      ) : null}
-                    </form>
-                  ) : null}
-                </div>
-              );
-            })}
+            {users.map((user) => (
+              <Link
+                key={user.id}
+                href={`/admin/users/${encodeURIComponent(user.id)}/dashboard`}
+                className="block rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-blue-300 hover:bg-slate-50 hover:text-blue-700 dark:border-slate-800 dark:text-slate-200 dark:hover:border-blue-700 dark:hover:bg-slate-900 dark:hover:text-blue-200"
+              >
+                {user.salespersonName}
+              </Link>
+            ))}
           </div>
         </div>
       </div>
