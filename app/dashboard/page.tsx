@@ -5,7 +5,6 @@ import { AdminDashboard } from "@/components/admin-dashboard";
 import { AdminLogoutButton } from "@/components/admin-logout-button";
 import { DashboardCustomers } from "@/components/dashboard-customers";
 import { authOptions } from "@/lib/auth";
-import { isAdminUser } from "@/lib/is-admin-user";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
 type CustomerRow = {
@@ -20,7 +19,16 @@ export default async function DashboardPage() {
     redirect("/");
   }
 
-  const isAdmin = isAdminUser(session.user.name);
+  const supabaseAdmin = getSupabaseAdmin();
+  const { data: currentUser } = await supabaseAdmin
+    .from("app_users")
+    .select("role")
+    .eq("user_id", session.user.id)
+    .eq("is_active", true)
+    .maybeSingle();
+  const isAdmin =
+    typeof currentUser?.role === "string" &&
+    currentUser.role.trim().toLowerCase() === "admin";
 
   if (isAdmin) {
     return (
@@ -39,7 +47,6 @@ export default async function DashboardPage() {
     );
   }
 
-  const supabaseAdmin = getSupabaseAdmin();
   const { data, error } = await supabaseAdmin
     .from("credit_customer_list")
     .select("customer_code,customer_name")

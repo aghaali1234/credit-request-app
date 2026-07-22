@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -8,7 +7,7 @@ import { MODAL_NAVIGATION_CLEANUP_EVENT } from "@/components/navigation-modal-cl
 import { ProductCreditRequestModal, type InvoiceItem } from "@/components/product-credit-request-modal";
 import { NotFromRecentInvoicesNote } from "@/components/not-from-recent-invoices-note";
 
-type InvoiceSummary = {
+export type InvoiceSummary = {
   invoice_no: string;
   invoice_date: string;
   free_txt: string | null;
@@ -60,9 +59,12 @@ type CustomerInvoicesViewProps = {
   customerCode: string;
   invoices: InvoiceSummary[];
   initialTab?: DocumentTab;
+  embedded?: boolean;
+  searchEndpoint?: string;
+  onOpenInvoice?: (invoiceNo: string) => void;
 };
 
-export function CustomerInvoicesView({ customerCode, invoices, initialTab = "invoices" }: CustomerInvoicesViewProps) {
+export function CustomerInvoicesView({ customerCode, invoices, initialTab = "invoices", embedded = false, searchEndpoint, onOpenInvoice }: CustomerInvoicesViewProps) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<DocumentTab>(initialTab);
   const [searchTerm, setSearchTerm] = useState("");
@@ -116,7 +118,7 @@ export function CustomerInvoicesView({ customerCode, invoices, initialTab = "inv
     debounceTimeoutRef.current = window.setTimeout(async () => {
       try {
         const response = await fetch(
-          `/api/customers/${encodeURIComponent(customerCode)}/invoice-item-search?query=${encodeURIComponent(normalizedSearchTerm)}&documentType=${documentType}`,
+          `${searchEndpoint ?? `/api/customers/${encodeURIComponent(customerCode)}/invoice-item-search`}?query=${encodeURIComponent(normalizedSearchTerm)}&documentType=${documentType}`,
           { signal: abortController.signal },
         );
 
@@ -155,7 +157,9 @@ export function CustomerInvoicesView({ customerCode, invoices, initialTab = "inv
     setActiveTab(nextTab);
     setSelectedResult(null);
     runSearch(searchTerm, nextTab);
-    router.replace(`/dashboard/customers/${encodeURIComponent(customerCode)}${nextTab === "credits" ? "?tab=credits" : ""}`, { scroll: false });
+    if (!embedded) {
+      router.replace(`/dashboard/customers/${encodeURIComponent(customerCode)}${nextTab === "credits" ? "?tab=credits" : ""}`, { scroll: false });
+    }
   }
 
   const isSearchActive = searchTerm.trim().length >= 2;
@@ -240,9 +244,10 @@ export function CustomerInvoicesView({ customerCode, invoices, initialTab = "inv
               {searchResults.map((item, index) => (
                 <li key={`${item.invoice_no}-${item.item_no}-${index}`} className="rounded-md border border-zinc-200 dark:border-zinc-800 text-sm">
                   {isCreditsTab ? (
-                    <Link
-                      href={`/dashboard/customers/${encodeURIComponent(customerCode)}/invoices/${encodeURIComponent(item.invoice_no)}`}
-                      className="block px-3 py-3 text-left transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/60 dark:bg-zinc-900/40"
+                    <button
+                      type="button"
+                      onClick={() => onOpenInvoice ? onOpenInvoice(item.invoice_no) : router.push(`/dashboard/customers/${encodeURIComponent(customerCode)}/invoices/${encodeURIComponent(item.invoice_no)}`)}
+                      className="block w-full px-3 py-3 text-left transition-colors hover:bg-zinc-50 dark:bg-zinc-900/40 dark:hover:bg-zinc-800/60"
                     >
                       <p className="text-zinc-600 dark:text-zinc-300">Credit No: {item.invoice_no}</p>
                       <p className="mb-2 text-zinc-600 dark:text-zinc-300">Credit Date: {item.invoice_date}</p>
@@ -250,7 +255,7 @@ export function CustomerInvoicesView({ customerCode, invoices, initialTab = "inv
                       <p className="mb-2 text-zinc-600 dark:text-zinc-300">Reason: {formatFreeTxtReason(item.free_txt)}</p>
                       <p className="font-medium text-blue-700">{item.item_no}</p>
                       <p className="text-zinc-700 dark:text-zinc-200">{item.item_descp}</p>
-                    </Link>
+                    </button>
                   ) : (
                     <button
                       type="button"
@@ -277,15 +282,16 @@ export function CustomerInvoicesView({ customerCode, invoices, initialTab = "inv
         <ul className="space-y-2">
           {displayedRows.map((invoice) => (
             <li key={invoice.invoice_no} className="rounded-md border border-zinc-200 dark:border-zinc-800 text-sm">
-              <Link
-                href={`/dashboard/customers/${encodeURIComponent(customerCode)}/invoices/${encodeURIComponent(invoice.invoice_no)}`}
-                className="block px-3 py-2 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/60 dark:bg-zinc-900/40"
+              <button
+                type="button"
+                onClick={() => onOpenInvoice ? onOpenInvoice(invoice.invoice_no) : router.push(`/dashboard/customers/${encodeURIComponent(customerCode)}/invoices/${encodeURIComponent(invoice.invoice_no)}`)}
+                className="block w-full px-3 py-2 text-left transition-colors hover:bg-zinc-50 dark:bg-zinc-900/40 dark:hover:bg-zinc-800/60"
               >
                 <p className="font-medium">{activeTab === "invoices" ? "Invoice No" : "Credit No"}: {invoice.invoice_no}</p>
                 <p className="text-zinc-600 dark:text-zinc-300">
                   {activeTab === "invoices" ? "Invoice Date" : "Credit Date"}: {invoice.invoice_date}
                 </p>
-              </Link>
+              </button>
             </li>
           ))}
         </ul>
@@ -316,7 +322,7 @@ export function CustomerInvoicesView({ customerCode, invoices, initialTab = "inv
         />
       ) : null}
 
-      {activeTab === "invoices" ? <NotFromRecentInvoicesNote customerCode={customerCode} /> : null}
+      {activeTab === "invoices" && !embedded ? <NotFromRecentInvoicesNote customerCode={customerCode} /> : null}
     </section>
   );
 }

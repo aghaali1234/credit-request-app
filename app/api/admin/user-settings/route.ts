@@ -1,11 +1,10 @@
-import { getServerSession } from "next-auth";
-
-import { authOptions } from "@/lib/auth";
-import { isAdminUser } from "@/lib/is-admin-user";
+import { getAdminSession } from "@/lib/admin-auth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
 type AppUserRow = {
+  user_id: string | number | null;
   username: string | null;
+  email?: string | null;
   salesperson_name: string | null;
 };
 
@@ -15,18 +14,10 @@ type PasswordUpdateBody = {
 };
 
 async function assertAdminSession() {
-  const session = await getServerSession(authOptions);
-
-  if (!session?.user?.salespersonName) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  if (!isAdminUser(session.user.name)) {
-    return Response.json({ error: "Forbidden" }, { status: 403 });
-  }
-
-  return null;
+  const { response } = await getAdminSession();
+  return response ?? null;
 }
+
 
 export async function GET() {
   const adminError = await assertAdminSession();
@@ -38,7 +29,7 @@ export async function GET() {
   const supabaseAdmin = getSupabaseAdmin();
   const { data, error } = await supabaseAdmin
     .from("app_users")
-    .select("username,salesperson_name")
+    .select("user_id,username,email,salesperson_name")
     .eq("is_active", true)
     .eq("role", "salesperson")
     .order("salesperson_name", { ascending: true });
@@ -51,11 +42,24 @@ export async function GET() {
     );
   }
 
-  const salespeople = ((data as AppUserRow[]) ?? [])
-    .map((row) => row.salesperson_name?.trim() || row.username?.trim())
-    .filter((name): name is string => Boolean(name));
+  const users = ((data as AppUserRow[]) ?? [])
+    .map((row) => {
+      const salespersonName = row.salesperson_name?.trim() || row.username?.trim();
 
-  return Response.json({ salespeople });
+      if (!row.user_id || !salespersonName) {
+        return null;
+      }
+
+      return {
+        id: String(row.user_id),
+        username: row.username,
+        email: row.email ?? null,
+        salespersonName,
+      };
+    })
+    .filter((user): user is NonNullable<typeof user> => user !== null);
+
+  return Response.json({ users, salespeople: users.map((user) => user.salespersonName) });
 }
 
 export async function PATCH(request: Request) {

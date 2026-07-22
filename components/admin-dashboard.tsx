@@ -1,6 +1,9 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+
+import { UserDashboard } from "@/components/user-dashboard";
 
 type UploadResponse = {
   fileName?: string;
@@ -13,7 +16,15 @@ type UploadResponse = {
   error?: string;
 };
 
+type UserSettingsUser = {
+  id: string;
+  username: string | null;
+  email: string | null;
+  salespersonName: string;
+};
+
 type UserSettingsResponse = {
+  users?: UserSettingsUser[];
   salespeople?: string[];
   error?: string;
 };
@@ -44,7 +55,10 @@ export function AdminDashboard() {
   const [duplicateRemoveError, setDuplicateRemoveError] = useState<string>();
   const [duplicateRemoveDeletedRows, setDuplicateRemoveDeletedRows] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [salespeople, setSalespeople] = useState<string[]>([]);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const [users, setUsers] = useState<UserSettingsUser[]>([]);
   const [selectedSalesperson, setSelectedSalesperson] = useState<string>();
   const [isLoadingSalespeople, setIsLoadingSalespeople] = useState(true);
   const [userSettingsError, setUserSettingsError] = useState<string>();
@@ -70,9 +84,9 @@ export function AdminDashboard() {
         setUserSettingsError(
           payload.error ?? "Salespeople could not be loaded.",
         );
-        setSalespeople([]);
+        setUsers([]);
       } else {
-        setSalespeople(payload.salespeople ?? []);
+        setUsers(payload.users ?? (payload.salespeople ?? []).map((salesperson) => ({ id: salesperson, username: salesperson, email: null, salespersonName: salesperson })));
       }
 
       setIsLoadingSalespeople(false);
@@ -84,6 +98,30 @@ export function AdminDashboard() {
       isMounted = false;
     };
   }, []);
+
+
+  const selectedInspectUserId = searchParams.get("viewUser") ?? undefined;
+  const selectedInspectUser = useMemo(
+    () => users.find((user) => user.id === selectedInspectUserId),
+    [selectedInspectUserId, users],
+  );
+
+  function selectInspectUser(userId: string) {
+    if (userId === selectedInspectUserId) {
+      return;
+    }
+
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("viewUser", userId);
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  }
+
+  function closeInspectUser() {
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("viewUser");
+    const queryString = params.toString();
+    router.replace(queryString ? `${pathname}?${queryString}` : pathname, { scroll: false });
+  }
 
   async function savePassword(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -340,33 +378,35 @@ export function AdminDashboard() {
                 Loading users...
               </p>
             ) : null}
-            {!isLoadingSalespeople && salespeople.length === 0 ? (
+            {!isLoadingSalespeople && users.length === 0 ? (
               <p className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-500 dark:bg-slate-900 dark:text-slate-400">
                 No active salesperson user found in app_users.
               </p>
             ) : null}
-            {salespeople.map((salesperson) => {
+            {users.map((user) => {
+              const salesperson = user.salespersonName;
               const isSelected = selectedSalesperson === salesperson;
+              const isInspectSelected = selectedInspectUserId === user.id;
 
               return (
-                <div key={salesperson} className="space-y-3">
+                <div key={user.id} className="space-y-3">
                   <button
                     type="button"
                     onClick={() => {
-                      setSelectedSalesperson(
-                        isSelected ? undefined : salesperson,
-                      );
+                      selectInspectUser(user.id);
+                      setSelectedSalesperson(isSelected ? undefined : salesperson);
                       setPassword("");
                       setPasswordSaveMessage(undefined);
                       setUserSettingsError(undefined);
                     }}
                     className={`w-full rounded-2xl border px-4 py-3 text-left text-sm font-semibold transition ${
-                      isSelected
+                      isSelected || isInspectSelected
                         ? "border-blue-500 bg-blue-50 text-blue-700 dark:border-blue-400 dark:bg-blue-950/40 dark:text-blue-200"
                         : "border-slate-200 text-slate-700 hover:border-blue-300 hover:bg-slate-50 dark:border-slate-800 dark:text-slate-200 dark:hover:border-blue-700 dark:hover:bg-slate-900"
                     }`}
                   >
-                    {salesperson}
+                    <span className="block">{salesperson}</span>
+                    {user.email ? <span className="mt-1 block text-xs font-normal opacity-80">{user.email}</span> : null}
                   </button>
 
                   {isSelected ? (
@@ -417,6 +457,18 @@ export function AdminDashboard() {
           </div>
         </div>
       </div>
+
+      {selectedInspectUserId ? (
+        <UserDashboard
+          key={selectedInspectUserId}
+          subjectUserId={selectedInspectUserId}
+          frameTitle="Selected User Dashboard"
+          selectedUserLabel={selectedInspectUser?.salespersonName}
+          selectedUserEmail={selectedInspectUser?.email}
+          inspectMode
+          onClose={closeInspectUser}
+        />
+      ) : null}
     </section>
   );
 }

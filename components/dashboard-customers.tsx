@@ -4,13 +4,15 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { signOut } from "next-auth/react";
 
-type Customer = {
+export type Customer = {
   customer_code: string;
   customer_name: string;
 };
 
 type DashboardCustomersProps = {
   initialCustomers: Customer[];
+  variant?: "page" | "embedded";
+  onSelectCustomer?: (customer: Customer) => void;
 };
 
 function normalizeSearchValue(value: string) {
@@ -27,7 +29,7 @@ function tokenizeSearchValue(value: string) {
   return normalizeSearchValue(value).split(" ").filter(Boolean);
 }
 
-export function DashboardCustomers({ initialCustomers }: DashboardCustomersProps) {
+export function DashboardCustomers({ initialCustomers, variant = "page", onSelectCustomer }: DashboardCustomersProps) {
   const [customers] = useState<Customer[]>(initialCustomers);
   const [showPolicyChecklist, setShowPolicyChecklist] = useState(false);
   const [showFullPolicy, setShowFullPolicy] = useState(false);
@@ -117,7 +119,7 @@ export function DashboardCustomers({ initialCustomers }: DashboardCustomersProps
 
   return (
     <section className="mt-6 space-y-5">
-      <div className="flex flex-col gap-4 rounded-2xl border border-zinc-200 bg-white/75 p-4 shadow-sm shadow-zinc-200/60 dark:border-zinc-800 dark:bg-zinc-950/70 dark:shadow-black/20 sm:flex-row sm:items-center sm:justify-between">
+      {variant === "page" ? <div className="flex flex-col gap-4 rounded-2xl border border-zinc-200 bg-white/75 p-4 shadow-sm shadow-zinc-200/60 dark:border-zinc-800 dark:bg-zinc-950/70 dark:shadow-black/20 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           <h2 className="text-lg font-semibold tracking-tight">Customers</h2>
           <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Browse invoices by customer.</p>
@@ -141,7 +143,7 @@ export function DashboardCustomers({ initialCustomers }: DashboardCustomersProps
             Sign Out
           </button>
         </div>
-      </div>
+      </div> : null}
 
       <div>
         <label
@@ -184,13 +186,24 @@ export function DashboardCustomers({ initialCustomers }: DashboardCustomersProps
             key={`${customer.customer_code}-${customer.customer_name}-${index}`}
             className="rounded-md border border-zinc-200 dark:border-zinc-800 text-sm"
           >
-            <Link
-              href={`/dashboard/customers/${encodeURIComponent(customer.customer_code)}`}
-              className="block px-3 py-2 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/60 dark:bg-zinc-900/40"
-            >
-              <p className="font-bold">{customer.customer_code}</p>
-              <p className="font-normal text-zinc-600 dark:text-zinc-300">{customer.customer_name}</p>
-            </Link>
+            {onSelectCustomer ? (
+              <button
+                type="button"
+                onClick={() => onSelectCustomer(customer)}
+                className="block w-full px-3 py-2 text-left transition-colors hover:bg-zinc-50 dark:bg-zinc-900/40 dark:hover:bg-zinc-800/60"
+              >
+                <p className="font-bold">{customer.customer_code}</p>
+                <p className="font-normal text-zinc-600 dark:text-zinc-300">{customer.customer_name}</p>
+              </button>
+            ) : (
+              <Link
+                href={`/dashboard/customers/${encodeURIComponent(customer.customer_code)}`}
+                className="block px-3 py-2 transition-colors hover:bg-zinc-50 dark:bg-zinc-900/40 dark:hover:bg-zinc-800/60"
+              >
+                <p className="font-bold">{customer.customer_code}</p>
+                <p className="font-normal text-zinc-600 dark:text-zinc-300">{customer.customer_name}</p>
+              </Link>
+            )}
           </li>
         ))}
       </ul>
