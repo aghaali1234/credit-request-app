@@ -16,7 +16,7 @@ type CustomerRow = {
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
 
-  if (!session?.user?.id || !session.user.salespersonName) {
+  if (!session?.user?.id) {
     redirect("/");
   }
 
@@ -44,6 +44,10 @@ export default async function DashboardPage() {
         </div>
       </main>
     );
+  }
+
+  if (!session.user.salespersonName) {
+    redirect("/");
   }
 
   const { data, error } = await supabaseAdmin

@@ -7,14 +7,13 @@ import { DashboardCustomers, type Customer } from "@/components/dashboard-custom
 import { InvoiceItemsTable } from "@/components/invoice-items-table";
 import type { InvoiceItem } from "@/components/product-credit-request-modal";
 
-type InspectUser = { id: string; username: string | null; email: string | null; salespersonName: string };
+type InspectUser = { id: string; username: string | null; salespersonName: string };
 type ViewState = { customer?: Customer; customerName?: string | null; invoiceNo?: string; invoiceDate?: string | null; isCreditInvoice?: boolean };
 
 type UserDashboardProps = {
   subjectUserId?: string;
   frameTitle?: string;
   selectedUserLabel?: string;
-  selectedUserEmail?: string | null;
   onClose?: () => void;
   inspectMode?: boolean;
 };
@@ -23,7 +22,7 @@ type CustomersPayload = { user?: InspectUser; customers?: Customer[]; error?: st
 type InvoicesPayload = { customerName?: string | null; invoices?: InvoiceSummary[]; error?: string };
 type ItemsPayload = { customerName?: string | null; invoiceDate?: string | null; items?: (InvoiceItem & { free_txt?: string | null })[]; error?: string };
 
-export function UserDashboard({ subjectUserId, frameTitle = "Dashboard", selectedUserLabel, selectedUserEmail, onClose, inspectMode = false }: UserDashboardProps) {
+export function UserDashboard({ subjectUserId, frameTitle = "Dashboard", selectedUserLabel, onClose, inspectMode = false }: UserDashboardProps) {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [resolvedUser, setResolvedUser] = useState<InspectUser | null>(null);
   const [invoices, setInvoices] = useState<InvoiceSummary[]>([]);
@@ -83,7 +82,6 @@ export function UserDashboard({ subjectUserId, frameTitle = "Dashboard", selecte
   }
 
   const titleName = selectedUserLabel ?? resolvedUser?.salespersonName ?? resolvedUser?.username ?? "Selected user";
-  const titleEmail = selectedUserEmail ?? resolvedUser?.email;
   const searchEndpoint = useMemo(() => view.customer ? `${baseApi}/customers/${encodeURIComponent(view.customer.customer_code)}/invoice-item-search` : undefined, [baseApi, view.customer]);
 
   if (!enabled) return null;
@@ -91,7 +89,7 @@ export function UserDashboard({ subjectUserId, frameTitle = "Dashboard", selecte
   return (
     <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950 sm:p-6">
       <div className="mb-5 flex flex-col gap-3 border-b border-slate-200 pb-4 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0"><p className="text-xs font-bold uppercase tracking-[0.22em] text-blue-700 dark:text-blue-400">{frameTitle}</p><h2 className="mt-1 truncate text-xl font-bold text-slate-950 dark:text-white">{titleName}</h2>{titleEmail ? <p className="text-sm text-slate-500 dark:text-slate-400">{titleEmail}</p> : null}</div>
+        <div className="min-w-0"><p className="text-xs font-bold uppercase tracking-[0.22em] text-blue-700 dark:text-blue-400">{frameTitle}</p><h2 className="mt-1 truncate text-xl font-bold text-slate-950 dark:text-white">{titleName}</h2></div>
         <div className="flex gap-2"><button type="button" onClick={() => void loadCustomers(true)} disabled={isLoadingCustomers} className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-900">{isLoadingCustomers ? "Refreshing..." : "Refresh"}</button>{onClose ? <button type="button" onClick={onClose} className="rounded-xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 dark:bg-white dark:text-slate-950">Close</button> : null}</div>
       </div>
       {error ? <p className="mb-4 rounded-2xl bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950/30 dark:text-red-300">{error}</p> : null}

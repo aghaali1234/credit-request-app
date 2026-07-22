@@ -37,11 +37,6 @@ export default async function AdminUserDashboardPage({
             <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-950 dark:text-white sm:text-3xl">
               Viewing dashboard for: {user.salespersonName}
             </h1>
-            {user.email ? (
-              <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
-                {user.email}
-              </p>
-            ) : null}
             <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
               Read-only view. Credit request creation and user data mutations
               are disabled.
@@ -62,7 +57,6 @@ export default async function AdminUserDashboardPage({
           subjectUserId={user.id}
           frameTitle="Selected User Dashboard"
           selectedUserLabel={user.salespersonName}
-          selectedUserEmail={user.email}
           inspectMode
         />
       </div>

@@ -17,7 +17,6 @@ type UploadResponse = {
 type UserSettingsUser = {
   id: string;
   username: string | null;
-  email: string | null;
   salespersonName: string;
 };
 
@@ -86,7 +85,6 @@ export function AdminDashboard() {
             (payload.salespeople ?? []).map((salesperson) => ({
               id: salesperson,
               username: salesperson,
-              email: null,
               salespersonName: salesperson,
             })),
         );
@@ -362,11 +360,6 @@ export function AdminDashboard() {
                       className="block text-left underline-offset-4 hover:underline"
                     >
                       <span className="block">{salesperson}</span>
-                      {user.email ? (
-                        <span className="mt-1 block text-xs font-normal opacity-80">
-                          {user.email}
-                        </span>
-                      ) : null}
                     </Link>
                     <button
                       type="button"

@@ -6,14 +6,12 @@ import { getSupabaseAdmin } from "@/lib/supabase-admin";
 export type InspectUser = {
   id: string;
   username: string | null;
-  email: string | null;
   salespersonName: string;
 };
 
 type AppUserRow = {
-  user_id: string | number | null;
+  id: string | number | null;
   username: string | null;
-  email?: string | null;
   salesperson_name: string | null;
 };
 
@@ -26,8 +24,8 @@ export async function getInspectableUser(userId: string): Promise<{ user?: Inspe
 
   const { data, error } = await getSupabaseAdmin()
     .from("app_users")
-    .select("user_id,username,email,salesperson_name")
-    .eq("user_id", userId)
+    .select("id,username,salesperson_name")
+    .eq("id", userId)
     .eq("is_active", true)
     .eq("role", "salesperson")
     .maybeSingle();
@@ -40,15 +38,14 @@ export async function getInspectableUser(userId: string): Promise<{ user?: Inspe
   const row = data as AppUserRow | null;
   const salespersonName = row?.salesperson_name?.trim();
 
-  if (!row?.user_id || !salespersonName) {
+  if (!row?.id || !salespersonName) {
     return { response: Response.json({ error: "Inspectable user not found" }, { status: 404 }) };
   }
 
   return {
     user: {
-      id: String(row.user_id),
+      id: String(row.id),
       username: row.username,
-      email: row.email ?? null,
       salespersonName,
     },
   };

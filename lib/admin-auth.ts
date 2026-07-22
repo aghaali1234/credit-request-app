@@ -6,7 +6,7 @@ import { authOptions } from "@/lib/auth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
 type AppUserRoleRow = {
-  user_id: string | number | null;
+  id: string | number | null;
   role: string | null;
 };
 
@@ -21,19 +21,19 @@ export async function getCurrentAppUserRole(): Promise<AppUserRoleCheck> {
   const session = await getServerSession(authOptions);
   const sessionUserId = session?.user?.id?.trim();
 
-  if (!sessionUserId || !session?.user?.salespersonName) {
+  if (!sessionUserId) {
     return {
       isAuthenticated: false,
       isAdmin: false,
       role: null,
-      error: "Missing authenticated session user id or salesperson name.",
+      error: "Missing authenticated session user id.",
     };
   }
 
   const { data, error } = await getSupabaseAdmin()
     .from("app_users")
-    .select("user_id,role")
-    .eq("user_id", sessionUserId)
+    .select("id,role")
+    .eq("id", sessionUserId)
     .eq("is_active", true)
     .maybeSingle();
 
@@ -53,11 +53,11 @@ export async function getCurrentAppUserRole(): Promise<AppUserRoleCheck> {
 
   const row = data as AppUserRoleRow | null;
   const role = row?.role?.trim().toLowerCase() ?? null;
-  const appUserId = row?.user_id == null ? null : String(row.user_id);
+  const appUserId = row?.id == null ? null : String(row.id);
 
   if (!row || appUserId !== sessionUserId) {
     console.warn(
-      "Authenticated session user did not match an active app_users.user_id row",
+      "Authenticated session user did not match an active app_users.id row",
       {
         sessionUserId,
         appUserId,
@@ -75,7 +75,7 @@ export async function getCurrentAppUserRole(): Promise<AppUserRoleCheck> {
 export async function getAdminSession() {
   const session = await getServerSession(authOptions);
 
-  if (!session?.user?.id || !session.user.salespersonName) {
+  if (!session?.user?.id) {
     return {
       response: Response.json({ error: "Unauthorized" }, { status: 401 }),
     };

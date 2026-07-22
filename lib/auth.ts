@@ -6,7 +6,7 @@ import { getSupabaseAdmin } from "./supabase-admin";
 type VerifiedUserRow = {
   user_id: string | number;
   username: string;
-  salesperson_name: string;
+  salesperson_name: string | null;
 };
 
 export const authOptions: NextAuthOptions = {
@@ -44,14 +44,14 @@ export const authOptions: NextAuthOptions = {
           ? (data[0] as VerifiedUserRow | undefined)
           : (data as VerifiedUserRow | null);
 
-        if (!user?.user_id || !user.salesperson_name) {
+        if (!user?.user_id || !user.username) {
           return null;
         }
 
         return {
           id: String(user.user_id),
           name: user.username,
-          salespersonName: user.salesperson_name,
+          salespersonName: user.salesperson_name?.trim() || user.username,
         };
       },
     }),

@@ -2,9 +2,8 @@ import { getAdminSession } from "@/lib/admin-auth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
 type AppUserRow = {
-  user_id: string | number | null;
+  id: string | number | null;
   username: string | null;
-  email?: string | null;
   salesperson_name: string | null;
 };
 
@@ -29,7 +28,7 @@ export async function GET() {
   const supabaseAdmin = getSupabaseAdmin();
   const { data, error } = await supabaseAdmin
     .from("app_users")
-    .select("user_id,username,email,salesperson_name")
+    .select("id,username,salesperson_name")
     .eq("is_active", true)
     .eq("role", "salesperson")
     .order("salesperson_name", { ascending: true });
@@ -46,14 +45,13 @@ export async function GET() {
     .map((row) => {
       const salespersonName = row.salesperson_name?.trim() || row.username?.trim();
 
-      if (!row.user_id || !salespersonName) {
+      if (!row.id || !salespersonName) {
         return null;
       }
 
       return {
-        id: String(row.user_id),
+        id: String(row.id),
         username: row.username,
-        email: row.email ?? null,
         salespersonName,
       };
     })
