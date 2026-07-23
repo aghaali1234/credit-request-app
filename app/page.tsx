@@ -25,18 +25,29 @@ export default async function Home({ searchParams }: HomeProps) {
   const initialError = normalizeSearchParam(error) ? "Invalid username or password." : null;
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-br from-zinc-100 via-white to-zinc-100 px-4 py-8 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950">
-      <div className="pointer-events-none absolute inset-0 opacity-60 [background:radial-gradient(circle_at_top,rgba(24,24,27,0.1),transparent_35%)] dark:[background:radial-gradient(circle_at_top,rgba(255,255,255,0.08),transparent_40%)]" />
+    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#0a0e1a] px-4 py-8">
+      <div className="pointer-events-none absolute inset-0 opacity-70 [background:radial-gradient(circle_at_top,rgba(99,102,241,0.12),transparent_45%)]" />
 
-      <section className="relative w-full max-w-md rounded-2xl border border-zinc-200/80 bg-white/90 p-8 shadow-xl shadow-zinc-300/20 backdrop-blur-sm dark:border-zinc-800/80 dark:bg-zinc-900/80 dark:shadow-black/20">
+      <section className="relative w-full max-w-md rounded-2xl border border-white/10 bg-[#141a2e] p-8 shadow-xl shadow-black/40 backdrop-blur-sm">
         <div className="mb-6 flex flex-col items-center text-center">
           <Image
             src={creditAppLogo}
-            alt="Credit App"
+            alt="Turkana"
             priority
-            className="mb-2 h-28 w-auto"
+            className="mb-4 h-24 w-auto"
           />
+          <h1 className="text-xl font-semibold tracking-tight text-white">
+            Turkana Supply Chain Portal
+          </h1>
         </div>
+
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold tracking-tight text-white">Sign in</h2>
+          <p className="mt-1 text-sm text-indigo-200/70">
+            Supply chain operations &amp; vendor portal.
+          </p>
+        </div>
+
         <LoginForm initialError={initialError} />
       </section>
     </main>
