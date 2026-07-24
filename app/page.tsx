@@ -37,7 +37,7 @@ export default async function Home({ searchParams }: HomeProps) {
             className="mb-4 h-24 w-auto"
           />
           <h1 className="text-xl font-semibold tracking-tight text-white">
-            Turkana Supply Chain Portal
+            Turkana Credit App
           </h1>
         </div>
 
