@@ -6,11 +6,17 @@ import Image from "next/image";
 import { cleanupDocumentInteractionState, MODAL_NAVIGATION_CLEANUP_EVENT } from "@/components/navigation-modal-cleanup";
 import { useFreshFileInput } from "@/components/use-fresh-file-input";
 import type { CreditRequestCartItem } from "@/lib/credit-request-email";
+import {
+  buildReturnFormFileName,
+  generateReturnFormPdf,
+  type ReturnFormRow,
+} from "@/lib/return-form-pdf";
 
 type CartItem = CreditRequestCartItem;
 
 type DraftResponse = {
   recipient: string;
+  customerName: string | null;
   mailtoUrl: string;
   isBodyTruncated: boolean;
   draft: {
@@ -478,6 +484,46 @@ export function GlobalCartWidget() {
       if (!payload.mailtoUrl) {
         setSendError("Unable to prepare email draft link.");
         return;
+      }
+
+      // Build the Return Form for pickup-selected items and download it before
+      // clearing the cart (clearing resets the rows the PDF is built from).
+      const pickupRows: ReturnFormRow[] = displayRows
+        .filter((item) => Boolean(pickupSelectionsById[item.id]))
+        .map((item) => {
+          const qty = String(item.quantity ?? 0);
+          const isCase = item.credit_type === "case";
+          return {
+            itemNo: item.item_no || "-",
+            caseQty: isCase ? qty : "",
+            pieceQty: isCase ? "" : qty,
+            description: item.displayDescription || "-",
+            invoiceNo: item.invoice_no || "-",
+            reason: item.reason || "-",
+          };
+        });
+
+      if (pickupRows.length > 0) {
+        try {
+          const now = new Date();
+          const pdfDate = `${now.getMonth() + 1}/${now.getDate()}/${now.getFullYear()}`;
+          const pdfBlob = await generateReturnFormPdf({
+            customerCode,
+            customerName: payload.customerName ?? "",
+            date: pdfDate,
+            rows: pickupRows,
+          });
+          const objectUrl = URL.createObjectURL(pdfBlob);
+          const downloadLink = document.createElement("a");
+          downloadLink.href = objectUrl;
+          downloadLink.download = buildReturnFormFileName(customerCode, pdfDate);
+          document.body.appendChild(downloadLink);
+          downloadLink.click();
+          document.body.removeChild(downloadLink);
+          window.setTimeout(() => URL.revokeObjectURL(objectUrl), 10000);
+        } catch (pdfError) {
+          console.error("Failed to generate return form PDF", pdfError);
+        }
       }
 
       const wasCartCleared = await clearCartData();
