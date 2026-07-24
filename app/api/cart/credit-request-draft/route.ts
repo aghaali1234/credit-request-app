@@ -1,14 +1,59 @@
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+
 import { getServerSession } from "next-auth";
 
 import {
   buildCreditRequestDraftText,
   buildCreditRequestMailtoUrl,
   CREDIT_REQUEST_RECIPIENT,
+  resolveCartRowDetails,
   type CreditRequestCartItem,
 } from "@/lib/credit-request-email";
 import { authOptions } from "@/lib/auth";
 import { ensureCartDraftId, listDraftPhotos, resolveUserId } from "@/lib/cart-draft";
+import {
+  buildReturnFormFileName,
+  generateReturnFormPdfBuffer,
+  type ReturnFormRow,
+} from "@/lib/return-form-pdf";
+import { sendCreditRequestEmail } from "@/lib/send-credit-email";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
+
+// Reads the Turkana logo from the public folder for embedding into the
+// server-generated Return Form PDF. Cached across invocations.
+let cachedLogoDataUrl: string | null | undefined;
+async function loadLogoDataUrlFromDisk(): Promise<string | null> {
+  if (cachedLogoDataUrl !== undefined) {
+    return cachedLogoDataUrl;
+  }
+  try {
+    const logoPath = path.join(process.cwd(), "public", "turkana-logo.png");
+    const buffer = await readFile(logoPath);
+    cachedLogoDataUrl = `data:image/png;base64,${buffer.toString("base64")}`;
+  } catch (error) {
+    console.error("Failed to read Turkana logo for PDF", error);
+    cachedLogoDataUrl = null;
+  }
+  return cachedLogoDataUrl;
+}
+
+function buildPickupReturnFormRows(cartRows: CreditRequestCartItem[]): ReturnFormRow[] {
+  return resolveCartRowDetails(cartRows)
+    .filter(({ item }) => Boolean(item.need_pickup))
+    .map(({ item, description, reason }) => {
+      const qty = String(item.quantity ?? 0);
+      const isCase = item.credit_type === "case";
+      return {
+        itemNo: item.item_no || "-",
+        caseQty: isCase ? qty : "",
+        pieceQty: isCase ? "" : qty,
+        description: description || "-",
+        invoiceNo: item.invoice_no || "-",
+        reason: reason || "-",
+      };
+    });
+}
 
 type PersistedPhotoRef = {
   fileName: string;
@@ -193,6 +238,42 @@ export async function POST(request: Request) {
       ccRecipients: bpEmailCcRecipients,
     });
 
+    // Build the Return Form PDF for pickup-selected items and email everything
+    // via Resend. The mailto draft is still returned so the client can also
+    // open the user's mail client as a backup.
+    const pickupRows = buildPickupReturnFormRows(cartRows);
+    const now = new Date();
+    const pdfDate = `${now.getMonth() + 1}/${now.getDate()}/${now.getFullYear()}`;
+    const customerCode = cartRows[0]?.customer_code ?? "";
+
+    const attachments = [];
+    if (pickupRows.length > 0) {
+      try {
+        const logo = await loadLogoDataUrlFromDisk();
+        const pdfBuffer = generateReturnFormPdfBuffer(
+          { customerCode, customerName: customerName ?? "", date: pdfDate, rows: pickupRows },
+          logo,
+        );
+        attachments.push({
+          filename: buildReturnFormFileName(customerCode, pdfDate),
+          content: pdfBuffer,
+        });
+      } catch (pdfError) {
+        console.error("Failed to build return form PDF attachment", pdfError);
+      }
+    }
+
+    const sendResult = await sendCreditRequestEmail({
+      subject,
+      text: draft.text,
+      ccRecipients: bpEmailCcRecipients,
+      attachments,
+    });
+
+    if (!sendResult.ok) {
+      console.error("Failed to send credit request email via Resend", sendResult.error);
+    }
+
     return Response.json({
       ok: true,
       recipient: CREDIT_REQUEST_RECIPIENT,
@@ -204,6 +285,9 @@ export async function POST(request: Request) {
       },
       mailtoUrl: mailtoDraft.url,
       isBodyTruncated: mailtoDraft.isBodyTruncated,
+      emailSent: sendResult.ok,
+      emailError: sendResult.ok ? null : sendResult.error,
+      attachedPdf: attachments.length > 0,
     });
   } catch (error) {
     console.error("Failed to prepare draft", error);

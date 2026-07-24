@@ -118,6 +118,39 @@ function encodeMailtoValue(value: string) {
   return encodeURIComponent(value);
 }
 
+// Resolves each cart row's display description and reason, collapsing any
+// standalone "Reason:" note rows onto their matching product row — mirrors the
+// logic used to build the email body so the PDF stays consistent.
+export function resolveCartRowDetails(cartRows: CreditRequestCartItem[]) {
+  const nonNoteItems = cartRows.filter((item) => !isEmailStandaloneReasonRow(item.item_descp));
+  const reasonRowsByKey = new Map<string, string[]>();
+
+  for (const item of cartRows) {
+    if (!isEmailStandaloneReasonRow(item.item_descp)) {
+      continue;
+    }
+    const parsed = parseEmailReasonAndDescription(item.item_descp);
+    if (!parsed.reason) {
+      continue;
+    }
+    const key = toEmailReasonRowKey(item);
+    const existing = reasonRowsByKey.get(key) ?? [];
+    existing.push(parsed.reason);
+    reasonRowsByKey.set(key, existing);
+  }
+
+  return nonNoteItems.map((item) => {
+    const parsed = parseEmailReasonAndDescription(item.item_descp);
+    const key = toEmailReasonRowKey(item);
+    const queuedReason = reasonRowsByKey.get(key)?.shift() ?? null;
+    return {
+      item,
+      description: parsed.description,
+      reason: parsed.reason ?? queuedReason ?? "-",
+    };
+  });
+}
+
 export function buildCreditRequestDraftText({
   cartRows,
   uploadedPhotos,

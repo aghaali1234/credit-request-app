@@ -43,14 +43,16 @@ async function loadLogoDataUrl(): Promise<string | null> {
   }
 }
 
-export async function generateReturnFormPdf(data: ReturnFormData): Promise<Blob> {
+// Shared renderer used by both the browser (returns a Blob) and the server
+// (returns a Buffer). The logo data URL is passed in so this stays environment
+// agnostic — the browser resolves it via fetch, the server reads it from disk.
+function renderReturnForm(data: ReturnFormData, logo: string | null): jsPDF {
   const doc = new jsPDF({ orientation: "portrait", unit: "pt", format: "letter" });
   const pageWidth = doc.internal.pageSize.getWidth();
   const marginX = 32;
   const contentWidth = pageWidth - marginX * 2;
 
   // --- Header: logo, title, company contact ---
-  const logo = await loadLogoDataUrl();
   const headerTop = 30;
   if (logo) {
     try {
@@ -188,7 +190,21 @@ export async function generateReturnFormPdf(data: ReturnFormData): Promise<Blob>
   });
   doc.setTextColor(0, 0, 0);
 
+  return doc;
+}
+
+// Browser entry point: resolves the logo via fetch and returns a Blob for download.
+export async function generateReturnFormPdf(data: ReturnFormData): Promise<Blob> {
+  const logo = await loadLogoDataUrl();
+  const doc = renderReturnForm(data, logo);
   return doc.output("blob");
+}
+
+// Server entry point: caller supplies the logo data URL (read from disk) and
+// receives a Buffer suitable for an email attachment.
+export function generateReturnFormPdfBuffer(data: ReturnFormData, logo: string | null): Buffer {
+  const doc = renderReturnForm(data, logo);
+  return Buffer.from(doc.output("arraybuffer"));
 }
 
 export function buildReturnFormFileName(customerCode: string, date: string): string {
