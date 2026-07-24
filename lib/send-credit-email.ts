@@ -24,11 +24,13 @@ export async function sendCreditRequestEmail({
   text,
   ccRecipients,
   attachments = [],
+  replyTo,
 }: {
   subject: string;
   text: string;
   ccRecipients: string[];
   attachments?: CreditEmailAttachment[];
+  replyTo?: string | null;
 }): Promise<SendCreditEmailResult> {
   const apiKey = process.env.RESEND_API_KEY;
 
@@ -40,12 +42,17 @@ export async function sendCreditRequestEmail({
     (email) => email.toLowerCase() !== CREDIT_REQUEST_RECIPIENT.toLowerCase(),
   );
 
+  // Only set Reply-To when the salesrep login is a valid email address, so
+  // replies from the credit team go straight back to the salesrep.
+  const replyToEmail = replyTo && isValidEmail(replyTo) ? replyTo : undefined;
+
   try {
     const resend = new Resend(apiKey);
     const { data, error } = await resend.emails.send({
       from: CREDIT_REQUEST_SENDER,
       to: [CREDIT_REQUEST_RECIPIENT],
       cc: cc.length > 0 ? cc : undefined,
+      replyTo: replyToEmail,
       subject,
       text,
       attachments: attachments.map((attachment) => ({
@@ -63,6 +70,10 @@ export async function sendCreditRequestEmail({
     const message = error instanceof Error ? error.message : "Unknown error sending email";
     return { ok: false, error: message };
   }
+}
+
+function isValidEmail(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 }
 
 function normalizeRecipients(recipients: string[]): string[] {
