@@ -196,6 +196,7 @@ export async function POST(request: Request) {
     return Response.json({
       ok: true,
       recipient: CREDIT_REQUEST_RECIPIENT,
+      customerName: customerName ?? null,
       photos: uploadedPhotos,
       draft: {
         ...draft,
