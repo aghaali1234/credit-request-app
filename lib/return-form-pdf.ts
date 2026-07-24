@@ -18,10 +18,9 @@ export type ReturnFormData = {
 };
 
 const COMPANY_LINES = [
-  "125 Michigan Ave",
+  "555 N Michigan Ave",
   "Kenilworth, NJ 07033 USA",
   "Tel: 908-810-8800",
-  "Fax: 908-810-8820",
   "Web: www.turkanafood.com",
 ];
 
