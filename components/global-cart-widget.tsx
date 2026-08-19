@@ -123,12 +123,14 @@ export function GlobalCartWidget() {
   const [sendSuccess, setSendSuccess] = useState<string | null>(null);
   const [removeAllError, setRemoveAllError] = useState<string | null>(null);
   const [isRemoveAllConfirmOpen, setIsRemoveAllConfirmOpen] = useState(false);
+  const [isSendConfirmOpen, setIsSendConfirmOpen] = useState(false);
   const [notes, setNotes] = useState("");
   const [pickupSelectionsById, setPickupSelectionsById] = useState<Record<string, boolean>>({});
   const [cartInteractionRevision, setCartInteractionRevision] = useState(0);
   const fileInputId = useId();
   const { fileInputKey, fileInputRef, resetFileInput } = useFreshFileInput();
   const removeAllConfirmButtonRef = useRef<HTMLButtonElement | null>(null);
+  const sendConfirmButtonRef = useRef<HTMLButtonElement | null>(null);
 
   const cartRows = useMemo(() => {
     const isManualNote = (item: CartItem) => isStandaloneReasonRow(item);
@@ -408,6 +410,25 @@ export function GlobalCartWidget() {
     }
   }, [isRemoveAllConfirmOpen]);
 
+  useEffect(() => {
+    if (isSendConfirmOpen) {
+      sendConfirmButtonRef.current?.focus();
+    }
+  }, [isSendConfirmOpen]);
+
+  function requestSendCreditConfirmation() {
+    if (displayRows.length === 0 || isSending || isRemovingAll) {
+      return;
+    }
+    setSendError(null);
+    setSendSuccess(null);
+    setIsSendConfirmOpen(true);
+  }
+
+  function cancelSendCreditRequest() {
+    setIsSendConfirmOpen(false);
+  }
+
   async function clearCartData() {
     setIsRemovingAll(true);
     setRemoveAllError(null);
@@ -452,6 +473,7 @@ export function GlobalCartWidget() {
       return;
     }
 
+    setIsSendConfirmOpen(false);
     setIsSending(true);
     setSendError(null);
     setSendSuccess(null);
@@ -681,8 +703,8 @@ export function GlobalCartWidget() {
                 <div className="grid w-full grid-cols-3 items-center gap-2 lg:flex lg:w-auto lg:justify-end">
                   <button
                     type="button"
-                    onClick={() => void sendCreditRequest()}
-                    disabled={displayRows.length === 0 || isSending || isRemovingAll}
+                    onClick={requestSendCreditConfirmation}
+                    disabled={displayRows.length === 0 || isSending || isRemovingAll || isSendConfirmOpen}
                     className="inline-flex h-9 min-w-0 items-center justify-center truncate whitespace-nowrap rounded-lg bg-slate-900 px-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50 sm:px-3 lg:min-w-[132px] dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-white"
                   >
                     <span className="truncate">{isSending ? "Preparing..." : "Send Credit"}</span>
@@ -704,6 +726,34 @@ export function GlobalCartWidget() {
                   </button>
                 </div>
               </div>
+
+              {isSendConfirmOpen ? (
+                <div className="mt-4 rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-200">
+                  <p className="font-semibold">Send this credit request to the credit team?</p>
+                  <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">
+                    An email will be sent to the credit team right away. This cannot be undone.
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button
+                      ref={sendConfirmButtonRef}
+                      type="button"
+                      onClick={() => void sendCreditRequest()}
+                      disabled={isSending}
+                      className="inline-flex h-8 items-center justify-center rounded-lg bg-slate-900 px-3 text-xs font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-white"
+                    >
+                      {isSending ? "Sending..." : "Send Credit Request"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={cancelSendCreditRequest}
+                      disabled={isSending}
+                      className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-200 dark:hover:bg-slate-800/60"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : null}
 
               {isRemoveAllConfirmOpen ? (
                 <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
