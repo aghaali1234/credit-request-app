@@ -3,7 +3,7 @@ import { Resend } from "resend";
 import { CREDIT_REQUEST_CC_RECIPIENT, CREDIT_REQUEST_RECIPIENT } from "@/lib/credit-request-email";
 
 // Sender must be on a domain verified in Resend.
-const CREDIT_REQUEST_SENDER = "Turkana Credit <noreply@turkanafood.com>";
+const CREDIT_REQUEST_SENDER = "Turkana Credit <info@turkanafood.com>";
 
 export type CreditEmailAttachment = {
   filename: string;
@@ -24,13 +24,13 @@ export async function sendCreditRequestEmail({
   text,
   ccRecipients,
   attachments = [],
-  replyTo,
+  salesRepEmail,
 }: {
   subject: string;
   text: string;
   ccRecipients: string[];
   attachments?: CreditEmailAttachment[];
-  replyTo?: string | null;
+  salesRepEmail?: string | null;
 }): Promise<SendCreditEmailResult> {
   const apiKey = process.env.RESEND_API_KEY;
 
@@ -38,13 +38,13 @@ export async function sendCreditRequestEmail({
     return { ok: false, error: "RESEND_API_KEY is not configured" };
   }
 
-  const cc = normalizeRecipients([CREDIT_REQUEST_CC_RECIPIENT, ...ccRecipients]).filter(
+  // The salesrep who submitted the request is CC'd (when their login is a valid
+  // email) so they get a copy and replies naturally include them.
+  const salesRepCc = salesRepEmail && isValidEmail(salesRepEmail) ? [salesRepEmail] : [];
+
+  const cc = normalizeRecipients([CREDIT_REQUEST_CC_RECIPIENT, ...salesRepCc, ...ccRecipients]).filter(
     (email) => email.toLowerCase() !== CREDIT_REQUEST_RECIPIENT.toLowerCase(),
   );
-
-  // Only set Reply-To when the salesrep login is a valid email address, so
-  // replies from the credit team go straight back to the salesrep.
-  const replyToEmail = replyTo && isValidEmail(replyTo) ? replyTo : undefined;
 
   try {
     const resend = new Resend(apiKey);
@@ -52,7 +52,6 @@ export async function sendCreditRequestEmail({
       from: CREDIT_REQUEST_SENDER,
       to: [CREDIT_REQUEST_RECIPIENT],
       cc: cc.length > 0 ? cc : undefined,
-      replyTo: replyToEmail,
       subject,
       text,
       attachments: attachments.map((attachment) => ({

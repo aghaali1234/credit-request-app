@@ -19,6 +19,9 @@ type DraftResponse = {
   customerName: string | null;
   mailtoUrl: string;
   isBodyTruncated: boolean;
+  emailSent: boolean;
+  emailError: string | null;
+  attachedPdf: boolean;
   draft: {
     subject: string;
     text: string;
@@ -117,6 +120,7 @@ export function GlobalCartWidget() {
   const [isSending, setIsSending] = useState(false);
   const [isRemovingAll, setIsRemovingAll] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
+  const [sendSuccess, setSendSuccess] = useState<string | null>(null);
   const [removeAllError, setRemoveAllError] = useState<string | null>(null);
   const [isRemoveAllConfirmOpen, setIsRemoveAllConfirmOpen] = useState(false);
   const [notes, setNotes] = useState("");
@@ -450,6 +454,7 @@ export function GlobalCartWidget() {
 
     setIsSending(true);
     setSendError(null);
+    setSendSuccess(null);
 
     try {
       const now = new Date();
@@ -481,8 +486,10 @@ export function GlobalCartWidget() {
         return;
       }
 
-      if (!payload.mailtoUrl) {
-        setSendError("Unable to prepare email draft link.");
+      if (!payload.emailSent) {
+        setSendError(
+          "The credit request could not be emailed. Please try again, or contact support if this keeps happening.",
+        );
         return;
       }
 
@@ -528,13 +535,17 @@ export function GlobalCartWidget() {
 
       const wasCartCleared = await clearCartData();
       if (!wasCartCleared) {
-        setSendError("Email draft was prepared, but cart could not be cleared. Please use Remove All.");
+        setSendError("The credit request was emailed, but the cart could not be cleared. Please use Remove All.");
         return;
       }
 
-      window.location.assign(payload.mailtoUrl);
+      setSendSuccess(
+        payload.attachedPdf
+          ? "Credit request sent to the credit team, with the pickup Return Form attached."
+          : "Credit request sent to the credit team.",
+      );
     } catch {
-      setSendError("Failed to prepare the email draft.");
+      setSendError("Failed to send the credit request.");
     } finally {
       setIsSending(false);
     }
@@ -916,6 +927,11 @@ export function GlobalCartWidget() {
 
               {sendError ? (
                 <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{sendError}</p>
+              ) : null}
+              {sendSuccess ? (
+                <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+                  {sendSuccess}
+                </p>
               ) : null}
               {removeAllError ? (
                 <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
