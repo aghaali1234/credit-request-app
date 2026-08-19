@@ -268,9 +268,8 @@ export async function POST(request: Request) {
       text: draft.text,
       ccRecipients: bpEmailCcRecipients,
       attachments,
-      // The salesrep logs in with their email as the username, so replies from
-      // the credit team route back to them.
-      replyTo: session.user.name ?? null,
+      // The salesrep logs in with their email as the username, so CC them a copy.
+      salesRepEmail: session.user.name ?? null,
     });
 
     if (!sendResult.ok) {
