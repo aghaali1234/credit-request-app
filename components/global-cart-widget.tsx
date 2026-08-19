@@ -728,29 +728,72 @@ export function GlobalCartWidget() {
               </div>
 
               {isSendConfirmOpen ? (
-                <div className="mt-4 rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-200">
-                  <p className="font-semibold">Send this credit request to the credit team?</p>
-                  <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">
-                    An email will be sent to the credit team right away. This cannot be undone.
-                  </p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <button
-                      ref={sendConfirmButtonRef}
-                      type="button"
-                      onClick={() => void sendCreditRequest()}
-                      disabled={isSending}
-                      className="inline-flex h-8 items-center justify-center rounded-lg bg-slate-900 px-3 text-xs font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-white"
+                <div
+                  className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4"
+                  role="dialog"
+                  aria-modal="true"
+                  aria-labelledby="send-confirm-title"
+                  onClick={cancelSendCreditRequest}
+                >
+                  <div
+                    className="w-full max-w-xs select-none font-sans text-[13px] text-black shadow-[4px_4px_10px_rgba(0,0,0,0.35)]"
+                    style={{
+                      backgroundColor: "#f0f0f0",
+                      border: "2px outset #ffffff",
+                    }}
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    {/* Title bar */}
+                    <div
+                      className="flex items-center justify-between px-2 py-1"
+                      style={{
+                        background: "linear-gradient(to right, #0a4fb8, #3a86e0)",
+                      }}
                     >
-                      {isSending ? "Sending..." : "Send Credit Request"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={cancelSendCreditRequest}
-                      disabled={isSending}
-                      className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-200 dark:hover:bg-slate-800/60"
-                    >
-                      Cancel
-                    </button>
+                      <span id="send-confirm-title" className="text-[12px] font-bold text-white">
+                        Turkana Credit
+                      </span>
+                      <button
+                        type="button"
+                        onClick={cancelSendCreditRequest}
+                        disabled={isSending}
+                        aria-label="Close"
+                        className="flex h-4 w-4 items-center justify-center text-[11px] font-bold leading-none text-black disabled:opacity-50"
+                        style={{ backgroundColor: "#d4d0c8", border: "1px outset #ffffff" }}
+                      >
+                        {"\u00d7"}
+                      </button>
+                    </div>
+
+                    {/* Body */}
+                    <div className="px-4 py-5">
+                      <p className="text-center text-[13px] text-black">
+                        Do you want to send this credit request to the credit team?
+                      </p>
+                    </div>
+
+                    {/* Buttons */}
+                    <div className="flex items-center justify-center gap-3 pb-5">
+                      <button
+                        ref={sendConfirmButtonRef}
+                        type="button"
+                        onClick={() => void sendCreditRequest()}
+                        disabled={isSending}
+                        className="min-w-[72px] px-3 py-1 text-[13px] text-black outline outline-1 outline-black/60 outline-offset-[-3px] focus:outline focus:outline-1 focus:outline-black disabled:opacity-50 active:border-[#7f7f7f] active:[border-style:inset]"
+                        style={{ backgroundColor: "#d4d0c8", border: "2px outset #ffffff" }}
+                      >
+                        {isSending ? "Sending..." : "Yes"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={cancelSendCreditRequest}
+                        disabled={isSending}
+                        className="min-w-[72px] px-3 py-1 text-[13px] text-black disabled:opacity-50 active:border-[#7f7f7f] active:[border-style:inset]"
+                        style={{ backgroundColor: "#d4d0c8", border: "2px outset #ffffff" }}
+                      >
+                        No
+                      </button>
+                    </div>
                   </div>
                 </div>
               ) : null}
