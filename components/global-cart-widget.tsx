@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import type { ChangeEvent, MouseEvent as ReactMouseEvent } from "react";
+import { createPortal } from "react-dom";
 import Image from "next/image";
 import { cleanupDocumentInteractionState, MODAL_NAVIGATION_CLEANUP_EVENT } from "@/components/navigation-modal-cleanup";
 import { useFreshFileInput } from "@/components/use-fresh-file-input";
@@ -124,6 +125,8 @@ export function GlobalCartWidget() {
   const [removeAllError, setRemoveAllError] = useState<string | null>(null);
   const [isRemoveAllConfirmOpen, setIsRemoveAllConfirmOpen] = useState(false);
   const [isSendConfirmOpen, setIsSendConfirmOpen] = useState(false);
+  // Portals need document.body, which only exists after mount on the client.
+  const [portalMounted, setPortalMounted] = useState(false);
   const [notes, setNotes] = useState("");
   const [pickupSelectionsById, setPickupSelectionsById] = useState<Record<string, boolean>>({});
   const [cartInteractionRevision, setCartInteractionRevision] = useState(0);
@@ -411,6 +414,10 @@ export function GlobalCartWidget() {
   }, [isRemoveAllConfirmOpen]);
 
   useEffect(() => {
+    setPortalMounted(true);
+  }, []);
+
+  useEffect(() => {
     if (isSendConfirmOpen) {
       sendConfirmButtonRef.current?.focus();
     }
@@ -688,6 +695,86 @@ export function GlobalCartWidget() {
         <span>Cart ({cartItemCount})</span>
       </button>
 
+      {/*
+        Rendered through a portal to document.body so it escapes the cart
+        modal's `backdrop-blur` containing block. Without the portal, the
+        `fixed` dialog is positioned relative to the tall, scrollable cart
+        panel instead of the viewport, which pushed it off-screen on mobile.
+      */}
+      {portalMounted && isSendConfirmOpen
+        ? createPortal(
+            <div
+              className="fixed inset-0 z-[90] flex items-center justify-center bg-black/30 p-4"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="send-confirm-title"
+              onClick={cancelSendCreditRequest}
+            >
+              <div
+                className="w-full max-w-xs select-none font-sans text-[13px] text-black shadow-[4px_4px_10px_rgba(0,0,0,0.35)]"
+                style={{
+                  backgroundColor: "#f0f0f0",
+                  border: "2px outset #ffffff",
+                }}
+                onClick={(event) => event.stopPropagation()}
+              >
+                {/* Title bar */}
+                <div
+                  className="flex items-center justify-between px-2 py-1"
+                  style={{
+                    background: "linear-gradient(to right, #0a4fb8, #3a86e0)",
+                  }}
+                >
+                  <span id="send-confirm-title" className="text-[12px] font-bold text-white">
+                    Turkana Credit
+                  </span>
+                  <button
+                    type="button"
+                    onClick={cancelSendCreditRequest}
+                    disabled={isSending}
+                    aria-label="Close"
+                    className="flex h-4 w-4 items-center justify-center text-[11px] font-bold leading-none text-black disabled:opacity-50"
+                    style={{ backgroundColor: "#d4d0c8", border: "1px outset #ffffff" }}
+                  >
+                    {"\u00d7"}
+                  </button>
+                </div>
+
+                {/* Body */}
+                <div className="px-4 py-5">
+                  <p className="text-center text-[13px] text-black">
+                    Do you want to send this credit request to the credit team?
+                  </p>
+                </div>
+
+                {/* Buttons */}
+                <div className="flex items-center justify-center gap-3 pb-5">
+                  <button
+                    ref={sendConfirmButtonRef}
+                    type="button"
+                    onClick={() => void sendCreditRequest()}
+                    disabled={isSending}
+                    className="min-w-[72px] px-3 py-1 text-[13px] text-black outline outline-1 outline-black/60 outline-offset-[-3px] focus:outline focus:outline-1 focus:outline-black disabled:opacity-50 active:border-[#7f7f7f] active:[border-style:inset]"
+                    style={{ backgroundColor: "#d4d0c8", border: "2px outset #ffffff" }}
+                  >
+                    {isSending ? "Sending..." : "Yes"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={cancelSendCreditRequest}
+                    disabled={isSending}
+                    className="min-w-[72px] px-3 py-1 text-[13px] text-black disabled:opacity-50 active:border-[#7f7f7f] active:[border-style:inset]"
+                    style={{ backgroundColor: "#d4d0c8", border: "2px outset #ffffff" }}
+                  >
+                    No
+                  </button>
+                </div>
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
+
       {isOpen ? (
         <div
           key={cartInteractionRevision}
@@ -726,77 +813,6 @@ export function GlobalCartWidget() {
                   </button>
                 </div>
               </div>
-
-              {isSendConfirmOpen ? (
-                <div
-                  className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4"
-                  role="dialog"
-                  aria-modal="true"
-                  aria-labelledby="send-confirm-title"
-                  onClick={cancelSendCreditRequest}
-                >
-                  <div
-                    className="w-full max-w-xs select-none font-sans text-[13px] text-black shadow-[4px_4px_10px_rgba(0,0,0,0.35)]"
-                    style={{
-                      backgroundColor: "#f0f0f0",
-                      border: "2px outset #ffffff",
-                    }}
-                    onClick={(event) => event.stopPropagation()}
-                  >
-                    {/* Title bar */}
-                    <div
-                      className="flex items-center justify-between px-2 py-1"
-                      style={{
-                        background: "linear-gradient(to right, #0a4fb8, #3a86e0)",
-                      }}
-                    >
-                      <span id="send-confirm-title" className="text-[12px] font-bold text-white">
-                        Turkana Credit
-                      </span>
-                      <button
-                        type="button"
-                        onClick={cancelSendCreditRequest}
-                        disabled={isSending}
-                        aria-label="Close"
-                        className="flex h-4 w-4 items-center justify-center text-[11px] font-bold leading-none text-black disabled:opacity-50"
-                        style={{ backgroundColor: "#d4d0c8", border: "1px outset #ffffff" }}
-                      >
-                        {"\u00d7"}
-                      </button>
-                    </div>
-
-                    {/* Body */}
-                    <div className="px-4 py-5">
-                      <p className="text-center text-[13px] text-black">
-                        Do you want to send this credit request to the credit team?
-                      </p>
-                    </div>
-
-                    {/* Buttons */}
-                    <div className="flex items-center justify-center gap-3 pb-5">
-                      <button
-                        ref={sendConfirmButtonRef}
-                        type="button"
-                        onClick={() => void sendCreditRequest()}
-                        disabled={isSending}
-                        className="min-w-[72px] px-3 py-1 text-[13px] text-black outline outline-1 outline-black/60 outline-offset-[-3px] focus:outline focus:outline-1 focus:outline-black disabled:opacity-50 active:border-[#7f7f7f] active:[border-style:inset]"
-                        style={{ backgroundColor: "#d4d0c8", border: "2px outset #ffffff" }}
-                      >
-                        {isSending ? "Sending..." : "Yes"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={cancelSendCreditRequest}
-                        disabled={isSending}
-                        className="min-w-[72px] px-3 py-1 text-[13px] text-black disabled:opacity-50 active:border-[#7f7f7f] active:[border-style:inset]"
-                        style={{ backgroundColor: "#d4d0c8", border: "2px outset #ffffff" }}
-                      >
-                        No
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ) : null}
 
               {isRemoveAllConfirmOpen ? (
                 <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
