@@ -25,7 +25,17 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
-        const supabaseAdmin = getSupabaseAdmin();
+        // A failure to even reach the database (missing env, paused project,
+        // rate limit, missing RPC) must NOT look like a wrong password.
+        // Throwing here surfaces a distinct error code to the client instead
+        // of the generic "CredentialsSignin" that a null return produces.
+        let supabaseAdmin;
+        try {
+          supabaseAdmin = getSupabaseAdmin();
+        } catch (configError) {
+          console.error("[v0] Supabase admin client unavailable", configError);
+          throw new Error("ServiceUnavailable");
+        }
 
         const { data, error } = await supabaseAdmin.rpc(
           "verify_app_user_password",
@@ -36,8 +46,8 @@ export const authOptions: NextAuthOptions = {
         );
 
         if (error) {
-          console.error("verify_app_user_password RPC failed", error);
-          return null;
+          console.error("[v0] verify_app_user_password RPC failed", error);
+          throw new Error("ServiceUnavailable");
         }
 
         const user = Array.isArray(data)

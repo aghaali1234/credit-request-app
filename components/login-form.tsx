@@ -23,14 +23,25 @@ export function LoginForm({ initialError = null }: LoginFormProps) {
     const response = await signIn("credentials", {
       username,
       password,
-      callbackUrl: "/dashboard",
-      redirect: true,
+      redirect: false,
     });
 
     if (response?.error) {
-      setError("Invalid username or password.");
+      // The server throws "ServiceUnavailable" when it cannot reach the
+      // database, versus the generic "CredentialsSignin" for a real mismatch.
+      if (response.error === "CredentialsSignin") {
+        setError("Invalid username or password.");
+      } else {
+        setError(
+          "Login is temporarily unavailable. Please wait a moment and try again.",
+        );
+      }
       setIsPending(false);
+      return;
     }
+
+    // Successful sign-in: send the user to their dashboard.
+    window.location.href = "/dashboard";
   }
 
   return (
