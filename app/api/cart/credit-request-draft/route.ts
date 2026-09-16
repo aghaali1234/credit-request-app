@@ -71,6 +71,10 @@ type CustomerBpEmailRow = {
   free_txt: string | null;
 };
 
+type AppUserEmailRow = {
+  email: string | null;
+};
+
 async function loadCustomerNameForDraft({
   salesperson,
   customerCode,
@@ -137,6 +141,23 @@ async function loadBpEmailsForDraft({
   }
 
   return [...uniqueEmails];
+}
+
+async function loadSalesRepEmailForDraft(userId: string) {
+  const supabaseAdmin = getSupabaseAdmin();
+  const { data, error } = await supabaseAdmin
+    .from("app_users")
+    .select("email")
+    .eq("id", userId)
+    .eq("is_active", true)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Failed to load salesperson email for draft", { userId, error });
+    return null;
+  }
+
+  return (data as AppUserEmailRow | null)?.email?.trim() || null;
 }
 
 function isValidCartItem(value: unknown): value is CreditRequestCartItem {
@@ -220,6 +241,7 @@ export async function POST(request: Request) {
       customerCodes: cartRows.map((row) => row.customer_code),
     });
 
+    const salesRepEmail = await loadSalesRepEmailForDraft(userId);
     const uploadedPhotos: PersistedPhotoRef[] = persistedPhotos.map((photo) => ({
       fileName: photo.file_name,
       publicUrl: photo.public_url,
@@ -268,8 +290,7 @@ export async function POST(request: Request) {
       text: draft.text,
       ccRecipients: bpEmailCcRecipients,
       attachments,
-      // The salesrep logs in with their email as the username, so CC them a copy.
-      salesRepEmail: session.user.name ?? null,
+      salesRepEmail,
     });
 
     if (!sendResult.ok) {
