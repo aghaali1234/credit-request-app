@@ -161,7 +161,7 @@ export async function POST(request: Request) {
   return NextResponse.json(
     {
       ok: true,
-      reassignedCustomers: reassignedCount,
+      reassignedByTable,
       updatedUser: userUpdated,
       passwordVerifies: !verifyErr && Array.isArray(verifyData) ? verifyData.length > 0 : Boolean(verifyData),
       verifyError: verifyErr?.message ?? null,
