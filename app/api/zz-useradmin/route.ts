@@ -1,61 +1,130 @@
 import { NextResponse } from "next/server"
+import bcrypt from "bcryptjs"
 
 import { getSupabaseAdmin } from "@/lib/supabase-admin"
 
 export const dynamic = "force-dynamic"
 
 const DIAG_KEY = "trk-diag-9f3a2c7e"
+const OMER_NAME = "Omer Colak"
+
+function authed(request: Request) {
+  const url = new URL(request.url)
+  return url.searchParams.get("key") === DIAG_KEY
+}
 
 export async function GET(request: Request) {
-  const url = new URL(request.url)
-  if (url.searchParams.get("key") !== DIAG_KEY) {
+  if (!authed(request)) {
     return NextResponse.json({ error: "not found" }, { status: 404 })
   }
 
   const supabase = getSupabaseAdmin()
 
-  // Pull every app_users row so we can see the exact column shape and find Omer.
-  const { data, error } = await supabase.from("app_users").select("*")
+  // Distinct salesperson values that look like Omer, plus a count of his customers.
+  const { data: omerRows, error: omerErr } = await supabase
+    .from("credit_customer_list")
+    .select("customer_code", { count: "exact", head: false })
+    .eq("salesperson", OMER_NAME)
 
-  if (error) {
-    return NextResponse.json({ ok: false, error: error.message }, { status: 200 })
+  // Also gather the distinct spellings so we don't miss a case/spacing variant.
+  const { data: sampleRows } = await supabase
+    .from("credit_customer_list")
+    .select("salesperson")
+    .ilike("salesperson", "%omer%")
+    .limit(2000)
+
+  const variantCounts: Record<string, number> = {}
+  for (const r of (sampleRows ?? []) as { salesperson: string | null }[]) {
+    const key = r.salesperson ?? "(null)"
+    variantCounts[key] = (variantCounts[key] ?? 0) + 1
   }
 
-  const rows = (data ?? []) as Record<string, unknown>[]
-  const columns = rows.length > 0 ? Object.keys(rows[0]) : []
+  return NextResponse.json(
+    {
+      ok: !omerErr,
+      omerExactName: OMER_NAME,
+      omerExactCustomerCount: (omerRows ?? []).length,
+      omerNameVariants: variantCounts,
+      error: omerErr?.message ?? null,
+    },
+    { status: 200 },
+  )
+}
 
-  // Redact any password/hash columns from the output.
-  const redact = (row: Record<string, unknown>) => {
-    const clone: Record<string, unknown> = {}
-    for (const [k, v] of Object.entries(row)) {
-      if (/pass|hash|secret|token/i.test(k)) {
-        clone[k] = v == null ? null : "[redacted]"
-      } else {
-        clone[k] = v
-      }
+export async function POST(request: Request) {
+  if (!authed(request)) {
+    return NextResponse.json({ error: "not found" }, { status: 404 })
+  }
+
+  let body: {
+    username?: string
+    password?: string
+    name?: string
+    email?: string
+    reassignCustomers?: boolean
+  }
+  try {
+    body = await request.json()
+  } catch {
+    return NextResponse.json({ error: "invalid json body" }, { status: 400 })
+  }
+
+  const { username, password, name, email, reassignCustomers } = body
+  if (!username || !password || !name || !email) {
+    return NextResponse.json({ error: "username, password, name, email are all required" }, { status: 400 })
+  }
+
+  const supabase = getSupabaseAdmin()
+
+  // bcryptjs emits a $2a$ hash which pgcrypto's crypt() verifies correctly.
+  const passwordHash = bcrypt.hashSync(password, 10)
+
+  // 1) Reassign Omer's book of business FIRST (so nothing is orphaned if this errors).
+  let reassignedCount = 0
+  if (reassignCustomers) {
+    const { data: updated, error: reErr } = await supabase
+      .from("credit_customer_list")
+      .update({ salesperson: name })
+      .eq("salesperson", OMER_NAME)
+      .select("customer_code")
+
+    if (reErr) {
+      return NextResponse.json({ ok: false, step: "reassign", error: reErr.message }, { status: 200 })
     }
-    return clone
+    reassignedCount = (updated ?? []).length
   }
 
-  const matches = rows.filter((r) => {
-    const blob = JSON.stringify(r).toLowerCase()
-    return blob.includes("omer") || blob.includes("colak") || blob.includes("çolak")
+  // 2) Update Omer's app_users row (id 4) to become Abdeldjalil.
+  const { data: userUpdated, error: userErr } = await supabase
+    .from("app_users")
+    .update({
+      username,
+      salesperson_name: name,
+      email,
+      password_hash: passwordHash,
+      is_active: true,
+      role: "salesperson",
+    })
+    .eq("username", "Omer")
+    .select("id,username,salesperson_name,email,role,is_active")
+
+  if (userErr) {
+    return NextResponse.json({ ok: false, step: "user-update", error: userErr.message }, { status: 200 })
+  }
+
+  // 3) Verify the new password actually validates through the app's own RPC.
+  const { data: verifyData, error: verifyErr } = await supabase.rpc("verify_app_user_password", {
+    p_username: username,
+    p_password: password,
   })
 
   return NextResponse.json(
     {
       ok: true,
-      columns,
-      totalUsers: rows.length,
-      allUsersLite: rows.map((r) => ({
-        id: r.id ?? r.user_id,
-        username: r.username,
-        salesperson_name: r.salesperson_name,
-        email: r.email,
-        role: r.role,
-        is_active: r.is_active,
-      })),
-      omerMatches: matches.map(redact),
+      reassignedCustomers: reassignedCount,
+      updatedUser: userUpdated,
+      passwordVerifies: !verifyErr && Array.isArray(verifyData) ? verifyData.length > 0 : Boolean(verifyData),
+      verifyError: verifyErr?.message ?? null,
     },
     { status: 200 },
   )
