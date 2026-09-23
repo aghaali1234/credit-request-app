@@ -19,6 +19,33 @@ export async function GET(request: Request) {
   }
 
   const supabase = getSupabaseAdmin()
+  const url = new URL(request.url)
+  const mode = url.searchParams.get("mode") ?? "count"
+
+  // Discover every exposed table/view and its columns via the PostgREST OpenAPI spec,
+  // then surface any that expose a "salesperson" column (candidate base tables for the view).
+  if (mode === "schema") {
+    const base = process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY as string
+    const specRes = await fetch(`${base}/rest/v1/`, {
+      headers: { apikey: key, Authorization: `Bearer ${key}` },
+    })
+    const spec = (await specRes.json()) as {
+      definitions?: Record<string, { properties?: Record<string, { description?: string }> }>
+    }
+    const defs = spec.definitions ?? {}
+    const withSalesperson: Record<string, string[]> = {}
+    for (const [tableName, def] of Object.entries(defs)) {
+      const cols = Object.keys(def.properties ?? {})
+      if (cols.some((c) => c.toLowerCase().includes("salesperson") || c.toLowerCase().includes("sales_person"))) {
+        withSalesperson[tableName] = cols
+      }
+    }
+    return NextResponse.json(
+      { ok: specRes.ok, allTables: Object.keys(defs), tablesWithSalesperson: withSalesperson },
+      { status: 200 },
+    )
+  }
 
   // Distinct salesperson values that look like Omer, plus a count of his customers.
   const { data: omerRows, error: omerErr } = await supabase
