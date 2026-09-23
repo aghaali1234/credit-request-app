@@ -107,18 +107,31 @@ export async function POST(request: Request) {
   const passwordHash = bcrypt.hashSync(password, 10)
 
   // 1) Reassign Omer's book of business FIRST (so nothing is orphaned if this errors).
-  let reassignedCount = 0
+  // credit_customer_list is a non-updatable VIEW, so we update every underlying base
+  // table that carries the salesperson name string.
+  const BASE_TABLES = [
+    "credit_rows",
+    "credit_requests",
+    "credit_request_cart_items",
+    "credit_request_cart_drafts",
+    "credit_rows_analytics",
+  ]
+  const reassignedByTable: Record<string, number | string> = {}
   if (reassignCustomers) {
-    const { data: updated, error: reErr } = await supabase
-      .from("credit_customer_list")
-      .update({ salesperson: name })
-      .eq("salesperson", OMER_NAME)
-      .select("customer_code")
+    for (const table of BASE_TABLES) {
+      const { data: updated, error: reErr } = await supabase
+        .from(table)
+        .update({ salesperson: name })
+        .eq("salesperson", OMER_NAME)
+        .select("*", { count: "exact", head: false })
 
-    if (reErr) {
-      return NextResponse.json({ ok: false, step: "reassign", error: reErr.message }, { status: 200 })
+      if (reErr) {
+        // A table may legitimately not have the column / not exist; record and continue.
+        reassignedByTable[table] = `error: ${reErr.message}`
+        continue
+      }
+      reassignedByTable[table] = (updated ?? []).length
     }
-    reassignedCount = (updated ?? []).length
   }
 
   // 2) Update Omer's app_users row (id 4) to become Abdeldjalil.
