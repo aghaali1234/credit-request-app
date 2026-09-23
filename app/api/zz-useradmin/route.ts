@@ -123,7 +123,7 @@ export async function POST(request: Request) {
         .from(table)
         .update({ salesperson: name })
         .eq("salesperson", OMER_NAME)
-        .select("*", { count: "exact", head: false })
+        .select("*")
 
       if (reErr) {
         // A table may legitimately not have the column / not exist; record and continue.
