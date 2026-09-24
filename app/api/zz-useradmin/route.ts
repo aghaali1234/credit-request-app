@@ -78,6 +78,45 @@ export async function GET(request: Request) {
   )
 }
 
+// Reassign a large table in batches to avoid statement timeouts.
+// PostgREST cannot LIMIT an UPDATE, so we page through primary keys and
+// update each chunk explicitly, looping until no OMER_NAME rows remain.
+async function batchReassignTable(
+  supabase: ReturnType<typeof getSupabaseAdmin>,
+  table: string,
+  toName: string,
+  batchSize = 300,
+): Promise<number | string> {
+  // Detect a usable key column from one sample row.
+  const { data: sample, error: sampleErr } = await supabase.from(table).select("*").limit(1)
+  if (sampleErr) return `error: ${sampleErr.message}`
+  const cols = Object.keys((sample?.[0] as unknown as Record<string, unknown>) ?? {})
+  if (cols.length === 0) return 0 // nothing in the table at all
+  const keyCol = ["id", "row_id", "uuid", "pk"].find((c) => cols.includes(c)) ?? cols[0]
+
+  let total = 0
+  // Safety cap so a bug can never loop forever.
+  for (let guard = 0; guard < 1000; guard++) {
+    const { data: batch, error: selErr } = await supabase
+      .from(table)
+      .select(keyCol)
+      .eq("salesperson", OMER_NAME)
+      .limit(batchSize)
+    if (selErr) return `error: ${selErr.message}`
+    const ids = (batch ?? []).map((r) => (r as unknown as Record<string, unknown>)[keyCol])
+    if (ids.length === 0) break
+
+    const { error: updErr } = await supabase
+      .from(table)
+      .update({ salesperson: toName })
+      .in(keyCol, ids as (string | number)[])
+    if (updErr) return `error: ${updErr.message} (after ${total})`
+    total += ids.length
+    if (ids.length < batchSize) break
+  }
+  return total
+}
+
 export async function POST(request: Request) {
   if (!authed(request)) {
     return NextResponse.json({ error: "not found" }, { status: 404 })
@@ -89,11 +128,34 @@ export async function POST(request: Request) {
     name?: string
     email?: string
     reassignCustomers?: boolean
+    action?: string
+    tables?: string[]
   }
   try {
     body = await request.json()
   } catch {
     return NextResponse.json({ error: "invalid json body" }, { status: 400 })
+  }
+
+  // Batched finisher for the large tables that timed out on a single bulk UPDATE.
+  if (body.action === "batch") {
+    const supabaseB = getSupabaseAdmin()
+    const toName = body.name ?? "Abdeldjalil Kherroubi"
+    const tables = body.tables ?? ["credit_rows", "credit_rows_analytics"]
+    const result: Record<string, number | string> = {}
+    for (const t of tables) {
+      result[t] = await batchReassignTable(supabaseB, t, toName)
+    }
+    // Report any leftover OMER rows still visible in the customer view.
+    const { data: leftover } = await supabaseB
+      .from("credit_customer_list")
+      .select("customer_code")
+      .eq("salesperson", OMER_NAME)
+      .limit(1)
+    return NextResponse.json(
+      { ok: true, batchedByTable: result, omerCustomersRemaining: (leftover ?? []).length },
+      { status: 200 },
+    )
   }
 
   const { username, password, name, email, reassignCustomers } = body
